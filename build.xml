@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Chitose Jabber bot" basedir="." default="dist">
+
+    <fileset id="libs" dir="lib">
+        <include name="*.jar"/>
+    </fileset>
+
+    <path id="classpath">
+        <fileset refid="libs"/>
+    </path>
+
+    <target name="check-target-dir">
+        <available file="target" property="target-present"/>
+    </target>
+
+    <target name="create-target-dir-if-needed" depends="check-target-dir" unless="target-dir-present">
+        <mkdir dir="target"/>
+    </target>
+
+    <target name="clean" depends="create-target-dir-if-needed">
+        <delete dir="target/classes" failonerror="false"/>
+        <delete dir="target/dist" failonerror="false"/>
+    </target>
+
+    <target name="build" depends="clean">
+        <mkdir dir="target/classes"/>
+        <javac srcdir="src/java" includes="**/*.java" destdir="target/classes" source="1.7" target="1.7">
+            <classpath>
+                <path refid="classpath"/>
+            </classpath>
+        </javac>
+    </target>
+
+	<target name="prepare-dist-dir" depends="clean">
+		<mkdir dir="target/dist"/>
+		<mkdir dir="target/dist/libs-exploded"/>
+		<unjar dest="target/dist/libs-exploded">
+			<patternset>
+				<exclude name="META-INF/MANIFEST.MF"/>
+			</patternset>
+			<fileset refid="libs"/>
+		</unjar>
+	</target>
+
+    <target name="dist" depends="build, prepare-dist-dir">
+		<jar destfile="target/dist/chitose.jar" manifest="src/manifest.txt">
+			<fileset dir="target/classes" includes="**"/>
+			<fileset dir="target/dist/libs-exploded" includes="**"/>
+		</jar>
+    </target>
+
+</project>
