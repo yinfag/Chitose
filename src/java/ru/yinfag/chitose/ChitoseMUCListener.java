@@ -27,7 +27,7 @@ class ChitoseMUCListener implements PacketListener {
 	private static final Pattern p1 = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?запости.*?(?:([\\w().]+?)|(няшку))\\.?$");
 	private static final Pattern p2 = Pattern.compile("sample_url=\"(.+?)\"");
 	private static final Pattern p3 = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?расскажи.*?про \"([А-Яа-яA-Za-z]+?)\"");
-	private static final Pattern p4 = Pattern.compile("отсортировано по дате выхода");
+	private static final String p4 = "отсортировано по дате выхода";
 	private static final Pattern p5 = Pattern.compile("\\'estimation\\'\\>(.+?)\\&nbsp");
 	private static final Pattern p6 = Pattern.compile("подробнее о перепечатке текстов\\<\\/a\\>\\<br\\>\\<br\\>\\<p align\\=justify class\\=\\'review\\'\\>(.+?)\\<\\/p\\>");
 	private static final Pattern p7 = Pattern.compile("<b>Раздел &laquo;анимация&raquo;");
@@ -46,17 +46,18 @@ class ChitoseMUCListener implements PacketListener {
 	// r - рандом
 	private final Random r = new Random();
 	
-	private final String conf;
-	private final String nickname;
-	ChitoseMUCListener(final MultiUserChat muc, final Properties props) {
-		this.muc = muc;
-		conf = props.getProperty("conference");
-		nickname= props.getProperty("nickname");
-	}
-	
+	private final String conference;
+	private final String defaultNickname;
+
 	private AtomicMarkableReference<String> nick = new AtomicMarkableReference<>("Chitose", false);
 
+	ChitoseMUCListener(final MultiUserChat muc, final Properties props) {
+		this.muc = muc;
+		conference = props.getProperty("conference");
+		defaultNickname = props.getProperty("nickname");
+	}
 	
+
 	public PacketListener newProxypacketListener() {
 		return new PacketListener() {
 			@Override
@@ -201,9 +202,7 @@ class ChitoseMUCListener implements PacketListener {
 				try (BufferedReader in = new BufferedReader(new InputStreamReader(worldart.openStream(), "cp1251"))) {
 					String inputLine;
 					while ((inputLine = in.readLine()) != null) {
-						Matcher m4 = p4.matcher(inputLine);
-						
-						if (m4.find()) {
+						if (inputLine.contains(p4)) {
 							phrasePresent = true;
 							break;
 						}
@@ -370,7 +369,7 @@ class ChitoseMUCListener implements PacketListener {
 
 	private void processPresence(final Presence presence) {
 		System.out.println(presence.getFrom());
-		if ((conf + "/" + nick.getReference()).equals(presence.getFrom())) {
+		if ((conference + "/" + nick.getReference()).equals(presence.getFrom())) {
 			for (PacketExtension extension : presence.getExtensions()) {
 				System.out.println("e: " + extension);
 				if (extension instanceof MUCUser) {
@@ -386,7 +385,7 @@ class ChitoseMUCListener implements PacketListener {
 						}
 					} else if (VOICED_ROLES.contains(role) && nick.isMarked()) {
 						try {
-							final String newNick = nickname;
+							final String newNick = defaultNickname;
 							muc.changeNickname(newNick);
 							nick.set(newNick, false);
 						} catch (XMPPException e) {
