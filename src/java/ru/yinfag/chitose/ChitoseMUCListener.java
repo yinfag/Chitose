@@ -31,8 +31,8 @@ class ChitoseMUCListener implements PacketListener {
 	private static final Pattern p5 = Pattern.compile("\\'estimation\\'\\>(.+?)\\&nbsp");
 	private static final Pattern p6 = Pattern.compile("подробнее о перепечатке текстов</a><br><br><p align=justify class='review'>(.+?)</p>");
 	private static final String p7 = "<b>Раздел &laquo;анимация&raquo;";
-	private static final Pattern p8 = Pattern.compile("animation/animation.php\\?id=(\\d+)");
-	private static final String p9 = "<meta http-equiv='Refresh' content='0;;";
+	private static final Pattern p8 = Pattern.compile("animation\\/animation.php\\?id\\=(\\d+)");
+	private static final String p9 = "<meta http-equiv='Refresh' content='0;";
 	
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
 
@@ -282,12 +282,30 @@ class ChitoseMUCListener implements PacketListener {
 				} else {
 					try (BufferedReader in = new BufferedReader(new InputStreamReader(worldart.openStream(), "cp1251"))) {
 						String inputLine;
-						String synopsis = "Нет такого мультфильма!";
+						URL worldart1;
+						String titleID = null;
 						while ((inputLine = in.readLine()) != null) {
-							Matcher m6 = p6.matcher(inputLine);
 							if (inputLine.contains(p9)) {
 								Matcher m8 = p8.matcher(inputLine);
-								synopsis = m8.group(1);
+								if (m8.find()) {
+									titleID = m8.group(1);
+								}
+							}
+						}
+						try {
+							worldart1 = new URL("http://www.world-art.ru/animation/animation.php?id="+titleID);
+						} catch (MalformedURLException e) {
+							log("Не получилось составить урл для запроса на вротарт", e);
+							return;
+						}
+						String synopsis = "Нет такого мультфильма!";
+						try (BufferedReader in1 = new BufferedReader(new InputStreamReader(worldart1.openStream(), "cp1251"))) {
+							String inputLine1;
+							while ((inputLine1 = in1.readLine()) != null) {
+								Matcher m6 = p6.matcher(inputLine1);
+								if (m6.find()) {
+									synopsis = m6.group(1);
+								}
 							}
 						}
 						try {
