@@ -29,7 +29,7 @@ class ChitoseMUCListener implements PacketListener {
 	private static final Pattern p3 = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?расскажи.*?про \"([А-Яа-яA-Za-z]+?)\"");
 	private static final String p4 = "отсортировано по дате выхода";
 	private static final Pattern p5 = Pattern.compile("\\'estimation\\'\\>(.+?)\\&nbsp");
-	private static final Pattern p6 = Pattern.compile("подробнее о перепечатке текстов\\<\\/a\\>\\<br\\>\\<br\\>\\<p align\\=justify class\\=\\'review\\'\\>(.+?)\\<\\/p\\>");
+	private static final Pattern p6 = Pattern.compile("подробнее о перепечатке текстов</a><br><br><p align=justify class='review'>(.+?)</p>");
 	private static final String p7 = "<b>Раздел &laquo;анимация&raquo;";
 	private static final Pattern p8 = Pattern.compile("animation/animation.php\\?id=(\\d+)");
 	
@@ -69,12 +69,9 @@ class ChitoseMUCListener implements PacketListener {
 
 	@Override
 	public void processPacket(Packet packet) {
-		System.out.println("Incoming packet: " + packet);
 		if (packet instanceof Presence) {
-			System.out.println("presence");
 			processPresence((Presence) packet);
 		} else if (packet instanceof Message) {
-			System.out.println("message");
 			processMessage((Message) packet);
 		}
 	}
@@ -243,7 +240,6 @@ class ChitoseMUCListener implements PacketListener {
 					try (BufferedReader in = new BufferedReader(new InputStreamReader(worldart.openStream(), "cp1251"))) {
 						String inputLine;
 						String titlelink = "";
-						URL worldart1;
 						while ((inputLine = in.readLine()) != null) {
 							Matcher m8 = p8.matcher(inputLine);
 							if (!m8.find()) {
@@ -251,6 +247,7 @@ class ChitoseMUCListener implements PacketListener {
 							}
 							titlelink = m8.group(1);
 						}
+						URL worldart1;
 						try {
 							worldart1 = new URL("http://www.world-art.ru/animation/animation.php?id="+titlelink);
 						} catch (MalformedURLException e) {
@@ -258,7 +255,7 @@ class ChitoseMUCListener implements PacketListener {
 							return;
 						}
 						String synopsis1 = "Нет такого мультфильма!";
-						try (BufferedReader in1 = new BufferedReader(new InputStreamReader(worldart1.openStream(),"cp1251" ))) {
+						try (BufferedReader in1 = new BufferedReader(new InputStreamReader(worldart1.openStream(), "cp1251"))) {
 							String inputLine1;
 							while ((inputLine1 = in1.readLine()) != null) {
 								Matcher m6 = p6.matcher(inputLine1);
