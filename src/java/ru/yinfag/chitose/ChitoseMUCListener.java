@@ -24,7 +24,7 @@ import java.util.Properties;
 class ChitoseMUCListener implements PacketListener {
 	// регэксп для костяшек
 	private static final Pattern p = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?кинь.*?(\\d+)[dд](\\d+)");
-	private static final Pattern p1 = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?запости.*?(?:([\\w().]+?)|(няшку))\\.?$");
+	private static final Pattern p1 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?(?:(?:запости)|(?:доставь)).*?(?:([\\w().*\\+]+?)|(няшку))\\.?$");
 	private static final Pattern p2 = Pattern.compile("sample_url=\"(.+?)\"");
 	private static final Pattern p3 = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?расскажи.*?про \"([А-Яа-яA-Za-z]+?)\"");
 	private static final String p4 = "отсортировано по дате выхода";
@@ -116,7 +116,7 @@ class ChitoseMUCListener implements PacketListener {
 			if (rnum2 == 0 || rnum2 == 1) {
 				String nyakaName;
 				if ("няшку".equals(m1.group(2))) {
-					nyakaName = null;
+					nyakaName = "";
 				} else {
 					nyakaName = m1.group(1);
 				}
@@ -176,7 +176,7 @@ class ChitoseMUCListener implements PacketListener {
 					}
 				}
 			}
-			if (rnum2 == 2) {
+			if (rnum2 == 3) {
 				try {
 					muc.sendMessage("gelbooru.com - Все няшки там. Удачи, лентяй.");
 				} catch (XMPPException e) {
