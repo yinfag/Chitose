@@ -29,7 +29,7 @@ class ChitoseMUCListener implements PacketListener {
 	private static final Pattern p3 = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?расскажи.*?про \"([А-Яа-яA-Za-z]+?)\"");
 	private static final String p4 = "отсортировано по дате выхода";
 	private static final Pattern p5 = Pattern.compile("\\'estimation\\'\\>(.+?)\\&nbsp");
-	private static final Pattern p6 = Pattern.compile("подробнее о перепечатке текстов</a><br><br><p align=justify class='review'>(.+?)</p>");
+	private static final Pattern p6 = Pattern.compile("Краткое содержание\\:.*?class\\=\\'review\\'\\>(.+?)\\<\\/p\\>");
 	private static final String p7 = "<b>Раздел &laquo;анимация&raquo;";
 	private static final Pattern p8 = Pattern.compile("animation\\/animation.php\\?id\\=(\\d+)");
 	private static final String p9 = "<meta http-equiv='Refresh' content='0;";
@@ -224,10 +224,18 @@ class ChitoseMUCListener implements PacketListener {
 							}
 						}
 						String titleList = Utils.join(titles, ", ");
-						try {
-							muc.sendMessage("Возможно ты имел ввиду: "+titleList);
-						} catch (XMPPException e) {
-							e.printStackTrace();
+						if (titles.size() > 10) {
+							try {
+								muc.sendMessage("Найдено "+titles.size()+" результатов, попробуй уточнить свой запрос.");
+							} catch (XMPPException e) {
+								e.printStackTrace();
+							}
+						} else {
+							try {
+								muc.sendMessage("Возможно ты имел ввиду: "+titleList);
+							} catch (XMPPException e) {
+								e.printStackTrace();
+							}
 						}
 					} catch (IOException e) {
 						log("Ошибка ввода-вывода при чтении страницы", e);
@@ -240,34 +248,32 @@ class ChitoseMUCListener implements PacketListener {
 				} else if (animationPresent) {
 					try (BufferedReader in = new BufferedReader(new InputStreamReader(worldart.openStream(), "cp1251"))) {
 						String inputLine;
-						String titlelink = "";
+						String titleID = null;
+						URL worldart1;
 						while ((inputLine = in.readLine()) != null) {
 							Matcher m8 = p8.matcher(inputLine);
-							if (!m8.find()) {
-								continue;
+							if (m8.find()) {
+								titleID = m8.group(1);
 							}
-							titlelink = m8.group(1);
 						}
-						URL worldart1;
 						try {
-							worldart1 = new URL("http://www.world-art.ru/animation/animation.php?id="+titlelink);
+							worldart1 = new URL("http://www.world-art.ru/animation/animation.php?id="+titleID);
 						} catch (MalformedURLException e) {
 							log("Не получилось составить урл для запроса на вротарт", e);
 							return;
 						}
-						String synopsis1 = "Нет такого мультфильма!";
+						String synopsis1 = "Похоже описание отсутствует. Щто поделать, десу.";
 						try (BufferedReader in1 = new BufferedReader(new InputStreamReader(worldart1.openStream(), "cp1251"))) {
 							String inputLine1;
 							while ((inputLine1 = in1.readLine()) != null) {
 								Matcher m6 = p6.matcher(inputLine1);
-								if (!m6.find()) {
-									continue;
+								if (m6.find()) {
+									synopsis1 = m6.group(1);
 								}
-								synopsis1 = m6.group(1);
 							}
 						}
 						try {
-							muc.sendMessage(synopsis1);
+							muc.sendMessage(synopsis1 + "\n" +worldart1);
 						} catch (XMPPException e1) {
 							e1.printStackTrace();
 						}
@@ -308,10 +314,18 @@ class ChitoseMUCListener implements PacketListener {
 								}
 							}
 						}
-						try {
-							muc.sendMessage(synopsis);
-						} catch (XMPPException e1) {
-							e1.printStackTrace();
+						if (titleID == null) {
+							try {
+								muc.sendMessage(synopsis);
+							} catch (XMPPException e1) {
+								e1.printStackTrace();
+							}
+						} else {
+							try {
+								muc.sendMessage(synopsis + "\n" +worldart);
+							} catch (XMPPException e1) {
+								e1.printStackTrace();
+							}
 						}
 					} catch (IOException e) {
 						log("Ошибка ввода-вывода при чтении страницы", e);
