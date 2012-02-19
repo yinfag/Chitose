@@ -51,13 +51,16 @@ class ChitoseMUCListener implements PacketListener {
 	
 	private final String conference;
 	private final String defaultNickname;
+	private final String jid;
 
-	private AtomicMarkableReference<String> nick = new AtomicMarkableReference<>("Chitose", false);
+	private AtomicMarkableReference<String> nick;
 
 	ChitoseMUCListener(final MultiUserChat muc, final Properties props) {
 		this.muc = muc;
 		conference = props.getProperty("conference");
 		defaultNickname = props.getProperty("nickname");
+		nick = new AtomicMarkableReference<>(defaultNickname, false);
+		jid = props.getProperty("login") + "@" + props.getProperty("domain") + "/" + props.getProperty("resource");
 	}
 	
 
@@ -80,6 +83,14 @@ class ChitoseMUCListener implements PacketListener {
 	}
 
 	private void processMessage(final Message message) {
+		System.out.println("message from " + message.getFrom());
+		if (
+				(conference + "/" + nick.getReference()).equals(message.getFrom()) ||
+						jid.equals(message.getFrom())
+		) {
+			return;
+		}
+
 		//отвечаем в чятик на определённое слово
 		if ("*smooch*".equals(message.getBody())) {
 			try {
