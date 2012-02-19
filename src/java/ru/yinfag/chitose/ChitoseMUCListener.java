@@ -348,37 +348,41 @@ class ChitoseMUCListener implements PacketListener {
 		}
 
 		//раскрываем ссылки
-		Matcher m10 = p10.matcher(message.getBody());
-		URL shorturl;
-		HttpURLConnection con;
-		String location = "";
-		if (m10.matches()) {
+		final Matcher m10 = p10.matcher(message.getBody());
+		StringBuilder urlExpanderSB = null;
+		while (m10.find()) {
+			if (urlExpanderSB == null) {
+				urlExpanderSB = new StringBuilder("Короткие урлы ведут сюда:");
+			}
+			final String shortUrlString = m10.group(0);
+			urlExpanderSB.append("\n").append(shortUrlString).append(" -> ");
+			final URL shortUrl;
 			try {
-				shorturl = new URL(m10.group(0));
+				shortUrl = new URL(shortUrlString);
 			} catch (MalformedURLException e) {
-				log("Не получилось составить урл для раскрытия ссылки", e);
-				return;
+				urlExpanderSB.append("(плохой урл почему-то)");
+				continue;
 			}
-			final StringBuilder sb = new StringBuilder("Короткие урлы ведут сюда:");
-			while (m10.find()) {
-				final String shortUrl = m10.group(0);
-				try {
-					con = (HttpURLConnection)shorturl.openConnection();
-					con.setInstanceFollowRedirects( false );
-					location = con.getHeaderField( "Location" );
-				} catch (IOException e) {
-					log("Не получилось открыть соединение", e);
-				}
-				final String targetUrl = location;
-				sb.append("\n").append(shortUrl).append(" -> ").append(targetUrl);
-			}
+			final HttpURLConnection con;
 			try {
-				muc.sendMessage(sb.toString());
+				con = ((HttpURLConnection) shortUrl.openConnection());
+				con.setInstanceFollowRedirects(false);
+				con.connect();
+			} catch (IOException e) {
+				log("Не получилось открыть соединение", e);
+				urlExpanderSB.append("(не удалось открыть соединение)");
+				continue;
+			}
+			urlExpanderSB.append(con.getHeaderField("Location"));
+		}
+		if (urlExpanderSB != null) {
+			try {
+				muc.sendMessage(urlExpanderSB.toString());
 			} catch (XMPPException e) {
 				e.printStackTrace();
 			}
 		}
-	
+
 		//бросаем костяшки
 		Matcher m = p.matcher(message.getBody());
 		if (m.matches()) {
