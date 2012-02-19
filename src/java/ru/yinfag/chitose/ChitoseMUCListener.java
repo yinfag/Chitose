@@ -19,6 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.*;
 import java.util.Properties;
+import java.net.URLEncoder;
 
 
 class ChitoseMUCListener implements PacketListener {
@@ -26,7 +27,7 @@ class ChitoseMUCListener implements PacketListener {
 	private static final Pattern p = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?кинь.*?(\\d+)[dд](\\d+)");
 	private static final Pattern p1 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?(?:(?:запости)|(?:доставь)).*?(?:([\\w().*\\+]+?)|(няшку))\\.?$");
 	private static final Pattern p2 = Pattern.compile("sample_url=\"(.+?)\"");
-	private static final Pattern p3 = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?расскажи.*?про \"([А-Яа-яA-Za-z]+?)\"");
+	private static final Pattern p3 = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?расскажи.*?про \"(.+?)\"");
 	private static final String p4 = "отсортировано по дате выхода";
 	private static final Pattern p5 = Pattern.compile("\\'estimation\\'\\>(.+?)\\&nbsp");
 	private static final Pattern p6 = Pattern.compile("Краткое содержание\\:.*?class\\=\\'review\\'\\>(.+?)\\<\\/p\\>");
@@ -179,9 +180,15 @@ class ChitoseMUCListener implements PacketListener {
 		Matcher m3 = p3.matcher(message.getBody());
 		if (m3.matches()) {
 			URL worldart;
+			String title = "";
 			int rnum = r.nextInt(3);
 			if (rnum == 0 || rnum == 1 || rnum == 2) {
-				String title = m3.group(1);
+				try {
+					title = URLEncoder.encode(m3.group(1), "CP1251");
+					System.out.println(title);
+				} catch (UnsupportedEncodingException e){
+					log("урленкодер не сработал", e);
+				}
 				try {
 					worldart = new URL("http://www.world-art.ru/search.php?public_search=" +title+"&global_sector=animation");
 				} catch (MalformedURLException e) {
@@ -273,7 +280,7 @@ class ChitoseMUCListener implements PacketListener {
 							}
 						}
 						try {
-							muc.sendMessage(synopsis1 + "\n" +worldart1);
+							muc.sendMessage(synopsis1.replaceAll("\\<br\\>", "\n") + "\n" +worldart1);
 						} catch (XMPPException e1) {
 							e1.printStackTrace();
 						}
@@ -322,7 +329,7 @@ class ChitoseMUCListener implements PacketListener {
 							}
 						} else {
 							try {
-								muc.sendMessage(synopsis + "\n" +worldart);
+								muc.sendMessage(synopsis.replaceAll("\\<br\\>", "\n") + "\n" +worldart);
 							} catch (XMPPException e1) {
 								e1.printStackTrace();
 							}
