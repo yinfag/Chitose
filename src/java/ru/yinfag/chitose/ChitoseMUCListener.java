@@ -34,6 +34,7 @@ class ChitoseMUCListener implements PacketListener {
 	private static final String p7 = "<b>Раздел &laquo;анимация&raquo;";
 	private static final Pattern p8 = Pattern.compile("animation\\/animation.php\\?id\\=(\\d+)");
 	private static final String p9 = "<meta http-equiv='Refresh' content='0;";
+	private static final Pattern p10 = Pattern.compile("http://goo\\.gl/\\w+");
 	
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
 
@@ -343,6 +344,38 @@ class ChitoseMUCListener implements PacketListener {
 						}
 					} 
 				}
+			}
+		}
+
+		//раскрываем ссылки
+		Matcher m10 = p10.matcher(message.getBody());
+		URL shorturl;
+		HttpURLConnection con;
+		String location = "";
+		if (m10.matches()) {
+			try {
+				shorturl = new URL(m10.group(0));
+			} catch (MalformedURLException e) {
+				log("Не получилось составить урл для раскрытия ссылки", e);
+				return;
+			}
+			final StringBuilder sb = new StringBuilder("Короткие урлы ведут сюда:");
+			while (m10.find()) {
+				final String shortUrl = m10.group(0);
+				try {
+					con = (HttpURLConnection)shorturl.openConnection();
+					con.setInstanceFollowRedirects( false );
+					location = con.getHeaderField( "Location" );
+				} catch (IOException e) {
+					log("Не получилось открыть соединение", e);
+				}
+				final String targetUrl = location;
+				sb.append("\n").append(shortUrl).append(" -> ").append(targetUrl);
+			}
+			try {
+				muc.sendMessage(sb.toString());
+			} catch (XMPPException e) {
+				e.printStackTrace();
 			}
 		}
 	
