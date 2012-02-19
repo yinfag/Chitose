@@ -32,6 +32,7 @@ class ChitoseMUCListener implements PacketListener {
 	private static final Pattern p6 = Pattern.compile("подробнее о перепечатке текстов</a><br><br><p align=justify class='review'>(.+?)</p>");
 	private static final String p7 = "<b>Раздел &laquo;анимация&raquo;";
 	private static final Pattern p8 = Pattern.compile("animation/animation.php\\?id=(\\d+)");
+	private static final String p9 = "<meta http-equiv='Refresh' content='0;;";
 	
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
 
@@ -284,10 +285,10 @@ class ChitoseMUCListener implements PacketListener {
 						String synopsis = "Нет такого мультфильма!";
 						while ((inputLine = in.readLine()) != null) {
 							Matcher m6 = p6.matcher(inputLine);
-							if (!m6.find()) {
-								continue;
+							if (inputLine.contains(p9)) {
+								Matcher m8 = p8.matcher(inputLine);
+								synopsis = m8.group(1);
 							}
-							synopsis = m6.group(1);
 						}
 						try {
 							muc.sendMessage(synopsis);
