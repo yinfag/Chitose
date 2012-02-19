@@ -22,7 +22,7 @@ import java.util.Properties;
 
 
 class ChitoseMUCListener implements PacketListener {
-	// регэксп для костяшек
+	// регэкспы регэкспушки
 	private static final Pattern p = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?кинь.*?(\\d+)[dд](\\d+)");
 	private static final Pattern p1 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?(?:(?:запости)|(?:доставь)).*?(?:([\\w().*\\+]+?)|(няшку))\\.?$");
 	private static final Pattern p2 = Pattern.compile("sample_url=\"(.+?)\"");
@@ -30,7 +30,7 @@ class ChitoseMUCListener implements PacketListener {
 	private static final String p4 = "отсортировано по дате выхода";
 	private static final Pattern p5 = Pattern.compile("\\'estimation\\'\\>(.+?)\\&nbsp");
 	private static final Pattern p6 = Pattern.compile("подробнее о перепечатке текстов\\<\\/a\\>\\<br\\>\\<br\\>\\<p align\\=justify class\\=\\'review\\'\\>(.+?)\\<\\/p\\>");
-	private static final Pattern p7 = Pattern.compile("<b>Раздел &laquo;анимация&raquo;");
+	private static final String p7 = "<b>Раздел &laquo;анимация&raquo;";
 	private static final Pattern p8 = Pattern.compile("animation/animation.php?id=(\\d+)");
 	
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
@@ -152,14 +152,6 @@ class ChitoseMUCListener implements PacketListener {
 						}
 						return;
 					}
-					/*if (urls.size() == 0) {
-						try {
-							muc.sendMessage(m1.group(1) +" не няшка!");
-						} catch (XMPPException e1) {
-							e1.printStackTrace();
-						}
-						return;
-					}*/
 					try {
 						Random random = new Random();
 						muc.sendMessage(urls.get(random.nextInt(urls.size())));
@@ -220,9 +212,7 @@ class ChitoseMUCListener implements PacketListener {
 				try (BufferedReader in = new BufferedReader(new InputStreamReader(worldart.openStream(), "cp1251"))) {
 					String inputLine;
 					while ((inputLine = in.readLine()) != null) {
-						Matcher m7 = p7.matcher(inputLine);
-						
-						if (m7.find()) {
+						if (inputLine.contains(p7)) {
 							phrasePresent1 = true;
 							break;
 						}
