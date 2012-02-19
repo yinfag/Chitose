@@ -113,7 +113,7 @@ class ChitoseMUCListener implements PacketListener {
 			URL gelbooru;
 			URLConnection c;
 			int rnum2 = r.nextInt(2);
-			if (rnum2 == 0) {
+			if (rnum2 == 0 || rnum2 == 1) {
 				String nyakaName;
 				if ("няшку".equals(m1.group(2))) {
 					nyakaName = null;
@@ -143,14 +143,14 @@ class ChitoseMUCListener implements PacketListener {
 						}
 						final String postUrl = String.format(m2.group(1));
 						urls.add(postUrl);
-						if (urls.size() == 0) {
-							try {
-								muc.sendMessage(m1.group(1) +" не няшка!");
-							} catch (XMPPException e1) {
+					}
+					if (urls.size() == 0) {
+						try {
+							muc.sendMessage(m1.group(1) +" не няшка!");
+						} catch (XMPPException e1) {
 								e1.printStackTrace();
-							}
-							return;
 						}
+						return;
 					}
 					/*if (urls.size() == 0) {
 						try {
@@ -176,7 +176,7 @@ class ChitoseMUCListener implements PacketListener {
 					}
 				}
 			}
-			if (rnum2 == 1) {
+			if (rnum2 == 3) {
 				try {
 					muc.sendMessage("gelbooru.com - Все няшки там. Удачи, лентяй.");
 				} catch (XMPPException e) {
