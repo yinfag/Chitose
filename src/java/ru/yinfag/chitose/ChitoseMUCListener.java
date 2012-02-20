@@ -34,6 +34,7 @@ class ChitoseMUCListener implements PacketListener {
 	private static final String p7 = "<b>Раздел &laquo;анимация&raquo;";
 	private static final Pattern p8 = Pattern.compile("animation\\/animation.php\\?id\\=(\\d+)");
 	private static final String p9 = "<meta http-equiv='Refresh' content='0;";
+	private static final Pattern p10 = Pattern.compile("http://goo\\.gl/\\w+");
 	
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
 
@@ -50,13 +51,16 @@ class ChitoseMUCListener implements PacketListener {
 	
 	private final String conference;
 	private final String defaultNickname;
+	private final String jid;
 
-	private AtomicMarkableReference<String> nick = new AtomicMarkableReference<>("Chitose", false);
+	private AtomicMarkableReference<String> nick;
 
 	ChitoseMUCListener(final MultiUserChat muc, final Properties props) {
 		this.muc = muc;
 		conference = props.getProperty("conference");
 		defaultNickname = props.getProperty("nickname");
+		nick = new AtomicMarkableReference<>(defaultNickname, false);
+		jid = props.getProperty("login") + "@" + props.getProperty("domain") + "/" + props.getProperty("resource");
 	}
 	
 
@@ -79,6 +83,14 @@ class ChitoseMUCListener implements PacketListener {
 	}
 
 	private void processMessage(final Message message) {
+		System.out.println("message from " + message.getFrom());
+		if (
+				(conference + "/" + nick.getReference()).equals(message.getFrom()) ||
+						jid.equals(message.getFrom())
+		) {
+			return;
+		}
+
 		//отвечаем в чятик на определённое слово
 		if ("*smooch*".equals(message.getBody())) {
 			try {
@@ -345,7 +357,43 @@ class ChitoseMUCListener implements PacketListener {
 				}
 			}
 		}
-	
+
+		//раскрываем ссылки
+		final Matcher m10 = p10.matcher(message.getBody());
+		StringBuilder urlExpanderSB = null;
+		while (m10.find()) {
+			if (urlExpanderSB == null) {
+				urlExpanderSB = new StringBuilder("Короткие урлы ведут сюда:");
+			}
+			final String shortUrlString = m10.group(0);
+			urlExpanderSB.append("\n").append(shortUrlString).append(" -> ");
+			final URL shortUrl;
+			try {
+				shortUrl = new URL(shortUrlString);
+			} catch (MalformedURLException e) {
+				urlExpanderSB.append("(плохой урл почему-то)");
+				continue;
+			}
+			final HttpURLConnection con;
+			try {
+				con = ((HttpURLConnection) shortUrl.openConnection());
+				con.setInstanceFollowRedirects(false);
+				con.connect();
+			} catch (IOException e) {
+				log("Не получилось открыть соединение", e);
+				urlExpanderSB.append("(не удалось открыть соединение)");
+				continue;
+			}
+			urlExpanderSB.append(con.getHeaderField("Location"));
+		}
+		if (urlExpanderSB != null) {
+			try {
+				muc.sendMessage(urlExpanderSB.toString());
+			} catch (XMPPException e) {
+				e.printStackTrace();
+			}
+		}
+
 		//бросаем костяшки
 		Matcher m = p.matcher(message.getBody());
 		if (m.matches()) {
