@@ -53,7 +53,7 @@ class ChitoseMUCListener implements PacketListener {
 	private final String conference;
 	private final String defaultNickname;
 	private final String jid;
-
+	private final boolean urlExpandEnabled;
 	private AtomicMarkableReference<String> nick;
 
 	ChitoseMUCListener(final MultiUserChat muc, final Properties props) {
@@ -62,6 +62,7 @@ class ChitoseMUCListener implements PacketListener {
 		defaultNickname = props.getProperty("nickname");
 		nick = new AtomicMarkableReference<>(defaultNickname, false);
 		jid = props.getProperty("login") + "@" + props.getProperty("domain") + "/" + props.getProperty("resource");
+		urlExpandEnabled = "1".equals(props.getProperty("urlExpandEnabled"));
 	}
 	
 
@@ -368,38 +369,40 @@ class ChitoseMUCListener implements PacketListener {
 		}
 
 		//раскрываем ссылки
-		final Matcher m10 = p10.matcher(message.getBody());
-		StringBuilder urlExpanderSB = null;
-		while (m10.find()) {
-			if (urlExpanderSB == null) {
-				urlExpanderSB = new StringBuilder("Короткие урлы ведут сюда:");
+		if (urlExpandEnabled) {
+			final Matcher m10 = p10.matcher(message.getBody());
+			StringBuilder urlExpanderSB = null;
+			while (m10.find()) {
+				if (urlExpanderSB == null) {
+					urlExpanderSB = new StringBuilder("Короткие урлы ведут сюда:");
+				}
+				final String shortUrlString = m10.group(0);
+				urlExpanderSB.append("\n").append(shortUrlString).append(" -> ");
+				final URL shortUrl;
+				try {
+					shortUrl = new URL(shortUrlString);
+				} catch (MalformedURLException e) {
+					urlExpanderSB.append("(плохой урл почему-то)");
+					continue;
+				}
+				final HttpURLConnection con;
+				try {
+					con = ((HttpURLConnection) shortUrl.openConnection());
+					con.setInstanceFollowRedirects(false);
+					con.connect();
+				} catch (IOException e) {
+					log("Не получилось открыть соединение", e);
+					urlExpanderSB.append("(не удалось открыть соединение)");
+					continue;
+				}
+				urlExpanderSB.append(con.getHeaderField("Location"));
 			}
-			final String shortUrlString = m10.group(0);
-			urlExpanderSB.append("\n").append(shortUrlString).append(" -> ");
-			final URL shortUrl;
-			try {
-				shortUrl = new URL(shortUrlString);
-			} catch (MalformedURLException e) {
-				urlExpanderSB.append("(плохой урл почему-то)");
-				continue;
-			}
-			final HttpURLConnection con;
-			try {
-				con = ((HttpURLConnection) shortUrl.openConnection());
-				con.setInstanceFollowRedirects(false);
-				con.connect();
-			} catch (IOException e) {
-				log("Не получилось открыть соединение", e);
-				urlExpanderSB.append("(не удалось открыть соединение)");
-				continue;
-			}
-			urlExpanderSB.append(con.getHeaderField("Location"));
-		}
-		if (urlExpanderSB != null) {
-			try {
-				muc.sendMessage(urlExpanderSB.toString());
-			} catch (XMPPException e) {
-				e.printStackTrace();
+			if (urlExpanderSB != null) {
+				try {
+					muc.sendMessage(urlExpanderSB.toString());
+				} catch (XMPPException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 

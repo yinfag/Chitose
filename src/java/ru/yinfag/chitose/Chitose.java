@@ -28,6 +28,8 @@ public class Chitose {
 		String resourse = props.getProperty("resourse");
 		String conf = props.getProperty("conference");
 		String nickname = props.getProperty("nickname");
+		String urlExpandEnabled = props.getProperty("urlExpandEnabled");
+		
 		//получить соединение
 		final XMPPConnection conn = new XMPPConnection(domain);
 		//подключиться
