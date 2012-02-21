@@ -35,6 +35,7 @@ class ChitoseMUCListener implements PacketListener {
 	private static final Pattern p8 = Pattern.compile("animation\\/animation.php\\?id\\=(\\d+)");
 	private static final String p9 = "<meta http-equiv='Refresh' content='0;";
 	private static final Pattern p10 = Pattern.compile("http://goo\\.gl/\\w+");
+	private static final Pattern p11 = Pattern.compile(".+?@.+?\\..+?\\..+?/(.+?)");
 	
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
 
@@ -121,6 +122,14 @@ class ChitoseMUCListener implements PacketListener {
 		//постим няшек
 		Matcher m1 = p1.matcher(message.getBody());
 		if (m1.matches()) {
+			
+			//имя пославшего запрос
+			Matcher m11 = p11.matcher(message.getFrom());
+			String nyasha = "";
+			if (m11.matches()) {
+				nyasha = m11.group(1);
+			}
+			
 			URL gelbooru;
 			URLConnection c;
 			int rnum2 = r.nextInt(3);
@@ -157,7 +166,7 @@ class ChitoseMUCListener implements PacketListener {
 					}
 					if (urls.size() == 0) {
 						try {
-							muc.sendMessage(m1.group(1) +" не няшка!");
+							muc.sendMessage(nyasha + ": " + m1.group(1) +" не няшка!");
 						} catch (XMPPException e1) {
 								e1.printStackTrace();
 						}
@@ -165,7 +174,7 @@ class ChitoseMUCListener implements PacketListener {
 					}
 					try {
 						Random random = new Random();
-						muc.sendMessage(urls.get(random.nextInt(urls.size())));
+						muc.sendMessage(nyasha + ": " + urls.get(random.nextInt(urls.size())));
 					} catch (XMPPException e) {
 						e.printStackTrace();
 					}
@@ -179,9 +188,9 @@ class ChitoseMUCListener implements PacketListener {
 					}
 				}
 			}
-			if (rnum2 == 3) {
+			if (rnum2 == 2) {
 				try {
-					muc.sendMessage("gelbooru.com - Все няшки там. Удачи, лентяй.");
+					muc.sendMessage(nyasha + ": " + "gelbooru.com - Все няшки там. Удачи, лентяй.");
 				} catch (XMPPException e) {
 					e.printStackTrace();
 				}
