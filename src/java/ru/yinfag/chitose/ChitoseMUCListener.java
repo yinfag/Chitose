@@ -36,7 +36,7 @@ class ChitoseMUCListener implements PacketListener {
 	private static final String p9 = "<meta http-equiv='Refresh' content='0;";
 	private static final Pattern p10 = Pattern.compile("http://goo\\.gl/\\w+");
 	private static final Pattern p11 = Pattern.compile(".+?@.+?\\..+?\\..+?/(.+?)");
-	private static final Pattern p12 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?напомни.*?о \"(.+?)\" через (\\d+).*?(?:(?:минут)|(?:минуты)|(?:минуту))");
+	private static final Pattern p12 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?напомни.*?о \"(.+?)\" через ([0-9]+).*?(?:(?:минут)|(?:минуты)|(?:минуту))");
 	private static final Pattern p13 = Pattern.compile(".*?([А-Яа-яA-Za-z_ё]+?)\\.(?:(?:жпг)|(?:жпег)|(?:jpg)|(?:пнг)|(?:гиф))");
 	
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
@@ -450,7 +450,7 @@ class ChitoseMUCListener implements PacketListener {
 					}
 				}
 			};
-			if (timeMinuteLong != 0 | oldTimer ) {
+			if (timeMinuteLong != 0 && oldTimer ) {
 				long time = timeMinuteLong * 60000;
 				timer.schedule(task, time);
 				try {
@@ -459,6 +459,8 @@ class ChitoseMUCListener implements PacketListener {
 					log("Failed to say таймер изменён :3", e);
 				}
 			} else if (timeMinuteLong != 0) {
+				long time = timeMinuteLong * 60000;
+				timer.schedule(task, time);
 				try {
 					muc.sendMessage(nyashaFinal + ": окей!");
 				} catch (XMPPException e) {
