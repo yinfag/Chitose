@@ -37,6 +37,7 @@ class ChitoseMUCListener implements PacketListener {
 	private static final Pattern p10 = Pattern.compile("http://goo\\.gl/\\w+");
 	private static final Pattern p11 = Pattern.compile(".+?@.+?\\..+?\\..+?/(.+?)");
 	private static final Pattern p12 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?разбуди.*?через.*?(\\d+).*?(?:(?:минут)|(?:минуты)|(?:минуту))");
+	private static final Pattern p13 = Pattern.compile("(.+?)\\.(?:(?:жпг)|(?:пнг)|(?:гиф))");
 	
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
 
@@ -448,6 +449,19 @@ class ChitoseMUCListener implements PacketListener {
 				}
 			}
 		}
+		
+		//jpg.to
+		Matcher m13 = p13.matcher(message.getBody());
+		if (m13.matches()) {
+			String pic = m13.group(1);
+			try {
+				muc.sendMessage("http://" + pic + ".jpg.to/");
+			} catch (XMPPException e) {
+				log("Не получилось запостить пикчу + жпг.то", e);
+			}
+		}
+			
+			
 
 		//бросаем костяшки
 		Matcher m = p.matcher(message.getBody());
