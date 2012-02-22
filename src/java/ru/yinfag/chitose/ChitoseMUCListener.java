@@ -36,8 +36,8 @@ class ChitoseMUCListener implements PacketListener {
 	private static final String p9 = "<meta http-equiv='Refresh' content='0;";
 	private static final Pattern p10 = Pattern.compile("http://goo\\.gl/\\w+");
 	private static final Pattern p11 = Pattern.compile(".+?@.+?\\..+?\\..+?/(.+?)");
-	private static final Pattern p12 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?разбуди.*?через.*?(\\d+).*?(?:(?:минут)|(?:минуты)|(?:минуту))");
-	private static final Pattern p13 = Pattern.compile("(.+?)\\.(?:(?:жпг)|(?:пнг)|(?:гиф))");
+	private static final Pattern p12 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?напомни.*?о \"(.+?)\" через (\\d+).*?(?:(?:минут)|(?:минуты)|(?:минуту))");
+	private static final Pattern p13 = Pattern.compile(".*?([А-Яа-яA-Za-z_ё]+?)\\.(?:(?:жпг)|(?:жпег)|(?:jpg)|(?:пнг)|(?:гиф))");
 	
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
 
@@ -421,7 +421,8 @@ class ChitoseMUCListener implements PacketListener {
 			final String nyashaFinal = nyasha;
 			
 		
-			String timeMinute = m12.group(1);			
+			String timeMinute = m12.group(2);
+			final String sage = m12.group(1);	
 			long timeMinuteLong = 0;
 			try {
 				timeMinuteLong =  Long.parseLong(timeMinute.trim());
@@ -433,7 +434,7 @@ class ChitoseMUCListener implements PacketListener {
 				public void run()
 				{
 					try {
-						muc.sendMessage(nyashaFinal + ": Нян!");
+						muc.sendMessage(nyashaFinal + ": Напоминаю! " + sage);
 					} catch (XMPPException e) {
 						log("Failed to say нян :3", e);
 					}
