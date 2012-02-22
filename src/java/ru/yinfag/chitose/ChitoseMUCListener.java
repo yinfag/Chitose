@@ -40,6 +40,8 @@ class ChitoseMUCListener implements PacketListener {
 	private static final Pattern p13 = Pattern.compile(".*?([А-Яа-яA-Za-z_ё]+?)\\.(?:(?:жпг)|(?:жпег)|(?:jpg)|(?:пнг)|(?:гиф))");
 	
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
+	
+	private final Map<String, Timer> timers = new HashMap<>();
 
 	static {
 		VOICED_ROLES.add("participant");
@@ -56,7 +58,7 @@ class ChitoseMUCListener implements PacketListener {
 	private final String defaultNickname;
 	private final String jid;
 	private final boolean urlExpandEnabled;
-	private AtomicMarkableReference<String> nick;
+	private final AtomicMarkableReference<String> nick;
 
 	ChitoseMUCListener(final MultiUserChat muc, final Properties props) {
 		this.muc = muc;
@@ -420,7 +422,7 @@ class ChitoseMUCListener implements PacketListener {
 			}
 			final String nyashaFinal = nyasha;
 			
-		
+			
 			String timeMinute = m12.group(2);
 			final String sage = m12.group(1);	
 			long timeMinuteLong = 0;
@@ -429,22 +431,36 @@ class ChitoseMUCListener implements PacketListener {
 			} catch (NumberFormatException e) {
 				log ("Ошибка перевода стринг в лонг", e);
 			}
+			final String pseudoJid = message.getFrom();
+			boolean oldTimer = timers.containsKey(pseudoJid);
+			if (oldTimer) {
+				timers.remove(pseudoJid).cancel();
+				
+			}
 			Timer timer = new Timer();
+			timers.put(pseudoJid, timer);
 			TimerTask task = new TimerTask() {
 				public void run()
 				{
+					timers.remove(pseudoJid);
 					try {
-						muc.sendMessage(nyashaFinal + ": Напоминаю! " + sage);
+						muc.sendMessage(nyashaFinal + ": Напоминаю! " + "\n" + sage);
 					} catch (XMPPException e) {
-						log("Failed to say нян :3", e);
+						log("Напоминание сфейлилось", e);
 					}
 				}
 			};
-			if (timeMinuteLong != 0) {
+			if (timeMinuteLong != 0 | oldTimer ) {
 				long time = timeMinuteLong * 60000;
 				timer.schedule(task, time);
 				try {
-					muc.sendMessage(nyashaFinal + ": окей");
+					muc.sendMessage(nyashaFinal + ": таймер изменён!");
+				} catch (XMPPException e) {
+					log("Failed to say таймер изменён :3", e);
+				}
+			} else if (timeMinuteLong != 0) {
+				try {
+					muc.sendMessage(nyashaFinal + ": окей!");
 				} catch (XMPPException e) {
 					log("Failed to say окей :3", e);
 				}
