@@ -32,7 +32,6 @@ class ChitoseMUCListener implements PacketListener {
 	private static final String p9 = "<meta http-equiv='Refresh' content='0;";
 	private static final Pattern p11 = Pattern.compile(".+?@.+?\\..+?\\..+?/(.+?)");
 	private static final Pattern p12 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?напомни.*?о \"(.+?)\" через ([0-9]+).*?(?:(?:минут)|(?:минуты)|(?:минуту))");
-	private static final Pattern p13 = Pattern.compile(".*?([А-Яа-яA-Za-z_ё]+?)\\.(?:(?:жпг)|(?:жпег)|(?:jpg)|(?:пнг)|(?:гиф))");
 
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
 
@@ -70,6 +69,7 @@ class ChitoseMUCListener implements PacketListener {
 		messageProcessors.add(new URLExpander(props));
 		messageProcessors.add(new GelbooruMessageProcessor());
 		messageProcessors.add(new DiceMessageProcessor());
+		messageProcessors.add(new JpgToMessageProcessor());
 	}
 	
 
@@ -351,16 +351,6 @@ class ChitoseMUCListener implements PacketListener {
 			}
 		}
 		
-		//jpg.to
-		Matcher m13 = p13.matcher(message.getBody());
-		if (m13.matches()) {
-			String pic = m13.group(1);
-			try {
-				muc.sendMessage("http://" + pic + ".jpg.to/");
-			} catch (XMPPException e) {
-				log("Не получилось запостить пикчу + жпг.то", e);
-			}
-		}
 	}
 
 	private void processPresence(final Presence presence) {
