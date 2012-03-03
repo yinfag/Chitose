@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
 
 class ChitoseMUCListener implements PacketListener {
 	// регэкспы регэкспушки
-	private static final Pattern p = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?кинь.*?(\\d+)[dд](\\d+)");
 	private static final Pattern p3 = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?расскажи.*?про \"(.+?)\"");
 	private static final String p4 = "отсортировано по дате выхода";
 	private static final Pattern p5 = Pattern.compile("\\'estimation\\'\\>(.+?)\\&nbsp");
@@ -70,6 +69,7 @@ class ChitoseMUCListener implements PacketListener {
 		messageProcessors.add(new SmoochMessageProcessor());
 		messageProcessors.add(new URLExpander(props));
 		messageProcessors.add(new GelbooruMessageProcessor());
+		messageProcessors.add(new DiceMessageProcessor());
 	}
 	
 
@@ -359,42 +359,6 @@ class ChitoseMUCListener implements PacketListener {
 				muc.sendMessage("http://" + pic + ".jpg.to/");
 			} catch (XMPPException e) {
 				log("Не получилось запостить пикчу + жпг.то", e);
-			}
-		}
-			
-			
-
-		//бросаем костяшки
-		Matcher m = p.matcher(message.getBody());
-		if (m.matches()) {
-			int rnum1 = r.nextInt(2);
-			if (rnum1 == 0) {
-				int a = Integer.parseInt(m.group(1));
-				int b = Integer.parseInt(m.group(2));
-				if (a > 9999 || b > 99999) {
-					try {
-						muc.sendMessage("Я не настолько умная же! ><'");
-					} catch (XMPPException e) {
-						e.printStackTrace();
-					}
-					return;
-				}
-				int result = 0;
-				for (int i = 0; i < a; i++) {
-					result += r.nextInt(b) + 1;
-				}
-				try {
-					muc.sendMessage("Выпало " + result + ", такие дела, нян!");
-				} catch (XMPPException e) {
-					e.printStackTrace();
-				}
-			}
-			if (rnum1 == 1) {
-				try {
-					muc.sendMessage("Неохота. ~___~");
-				} catch (XMPPException e) {
-					e.printStackTrace();
-				}
 			}
 		}
 	}

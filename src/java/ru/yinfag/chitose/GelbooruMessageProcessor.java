@@ -20,7 +20,6 @@ public class GelbooruMessageProcessor implements MessageProcessor {
 	);
 
 	private static final Pattern PICTURE_LIST_ENTRY_PATTERN = Pattern.compile("sample_url=\"(.+?)\"");
-	public static final Pattern USER_NICK_PATTERN = Pattern.compile("[^@]+@[^/]+/(.*)");
 
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
@@ -29,7 +28,7 @@ public class GelbooruMessageProcessor implements MessageProcessor {
 			return null;
 		}
 
-		final String userNick = getUserNick(message);
+		final String userNick = MessageProcessorUtils.getUserNick(message);
 
 		final String nyakaName;
 		if ("няшку".equals(m.group(1))) {
@@ -79,13 +78,5 @@ public class GelbooruMessageProcessor implements MessageProcessor {
 		return urls;
 	}
 
-	private String getUserNick(final Message message) throws MessageProcessingException {
-		final Matcher matcher = USER_NICK_PATTERN.matcher(message.getFrom());
-		if (matcher.matches()) {
-			return matcher.group(1);
-		} else {
-			throw new MessageProcessingException("Failed to parse nickname from message's author");
-		}
-	}
 }
 	
