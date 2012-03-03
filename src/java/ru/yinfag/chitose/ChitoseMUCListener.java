@@ -25,10 +25,10 @@ class ChitoseMUCListener implements PacketListener {
 	// регэкспы регэкспушки
 	private static final Pattern p3 = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?расскажи.*?про \"(.+?)\"");
 	private static final String p4 = "отсортировано по дате выхода";
-	private static final Pattern p5 = Pattern.compile("\\'estimation\\'\\>(.+?)\\&nbsp");
-	private static final Pattern p6 = Pattern.compile("Краткое содержание\\:.*?class\\=\\'review\\'\\>(.+?)\\<\\/p\\>");
+	private static final Pattern p5 = Pattern.compile("'estimation'>(.+?)&nbsp");
+	private static final Pattern p6 = Pattern.compile("Краткое содержание:.*?class='review'>(.+?)</p>");
 	private static final String p7 = "<b>Раздел &laquo;анимация&raquo;";
-	private static final Pattern p8 = Pattern.compile("animation\\/animation.php\\?id\\=(\\d+)");
+	private static final Pattern p8 = Pattern.compile("animation/animation.php\\?id=(\\d+)");
 	private static final String p9 = "<meta http-equiv='Refresh' content='0;";
 	private static final Pattern p11 = Pattern.compile(".+?@.+?\\..+?\\..+?/(.+?)");
 	private static final Pattern p12 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?напомни.*?о \"(.+?)\" через ([0-9]+).*?(?:(?:минут)|(?:минуты)|(?:минуту))");
@@ -83,7 +83,7 @@ class ChitoseMUCListener implements PacketListener {
 	}
 
 	@Override
-	public void processPacket(Packet packet) {
+	public void processPacket(final Packet packet) {
 		if (packet instanceof Presence) {
 			processPresence((Presence) packet);
 		} else if (packet instanceof Message) {
@@ -92,7 +92,7 @@ class ChitoseMUCListener implements PacketListener {
 	}
 
 	private void processMessage(final Message message) {
-		System.out.println("message from " + message.getFrom());
+		log("message from " + message.getFrom());
 		// if this is a message from ourselves, don't react to it
 		if (
 				(conference + "/" + nick.getReference()).equals(message.getFrom()) ||
@@ -356,7 +356,7 @@ class ChitoseMUCListener implements PacketListener {
 	private void processPresence(final Presence presence) {
 		System.out.println(presence.getFrom());
 		if ((conference + "/" + nick.getReference()).equals(presence.getFrom())) {
-			for (PacketExtension extension : presence.getExtensions()) {
+			for (final PacketExtension extension : presence.getExtensions()) {
 				System.out.println("e: " + extension);
 				if (extension instanceof MUCUser) {
 					final MUCUser.Item item = ((MUCUser) extension).getItem();
@@ -388,11 +388,14 @@ class ChitoseMUCListener implements PacketListener {
 		}
 	}
 
-	//сокращаем всякие ебанутые принтлны и стектрейсы
 	private static void log(final String message, final Exception e) {
-		System.out.println(message);
+		log(message);
 		if (e != null) {
 			e.printStackTrace();
 		}
+	}
+	
+	private static void log(final String message) {
+		System.out.println(message);
 	}
 }
