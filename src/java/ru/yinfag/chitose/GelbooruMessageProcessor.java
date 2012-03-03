@@ -1,82 +1,90 @@
 package ru.yinfag.chitose;
 
 import org.jivesoftware.smack.packet.Message;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.MalformedURLException;
-import java.io.IOException;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Random;
-import java.util.List;
 
 public class GelbooruMessageProcessor implements MessageProcessor {
+
+	private static final Pattern COMMAND_PATTERN = Pattern.compile(
+			".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?(?:(?:запости)|(?:доставь)).+?([\\w().*+]+|(?:няшку))[.!]?"
+	);
+
+	private static final Pattern PICTURE_LIST_ENTRY_PATTERN = Pattern.compile("sample_url=\"(.+?)\"");
+	public static final Pattern USER_NICK_PATTERN = Pattern.compile("[^@]+@[^/]+/(.*)");
+
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
-		Pattern p = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?(?:(?:запости)|(?:доставь)).*?(?:([\\w().*\\+]+?)|(няшку))\\.?$");
-		Pattern p2 = Pattern.compile("sample_url=\"(.+?)\"");
-		Matcher m = p.matcher(message.getBody());
-		if (m.matches()) {
+		final Matcher m = COMMAND_PATTERN.matcher(message.getBody());
+		if (!m.matches()) {
+			return null;
+		}
 
-			Pattern p1 = Pattern.compile(".+?@.+?\\..+?\\..+?/(.+?)");
-			Matcher m1 = p1.matcher(message.getFrom());
-			String nyasha = "";
-			if (m1.matches()) {
-				nyasha = m1.group(1);
-			}
-			
-			URL gelbooru;
-			URLConnection c;
-			String nyakaName;
-			if ("няшку".equals(m1.group(2))) {
-				nyakaName = "";
-			} else {
-				nyakaName = m1.group(1);
-			}
-			try {
-				gelbooru = new URL("http://gelbooru.com/index.php?page=dapi&s=post&q=index&limit=10000&tags=solo+"+nyakaName);
-			} catch (MalformedURLException e) {
-				log("Не получилось составить урл для запроса в гелбуру", e);
-				return nyasha + ": Ты ж бота сломал, бака!";
-			}
-			try {
-				c = gelbooru.openConnection();
-			} catch (IOException e) {
-				log("Не получилось открыть соединение с гелбуру", e);
-				return "Не получилось открыть соединение с гелбуру";
-			}
-			c.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.77 Safari/535.7");
-			try (BufferedReader in = new BufferedReader(new InputStreamReader(c.getInputStream()))) {
-				String inputLine;
-				final List<String> urls = new ArrayList<String>();
-				while ((inputLine = in.readLine()) != null) {
-					Matcher m2 = p2.matcher(inputLine);
-					if (!m2.find()) {
-						continue;
-					}
-					final String postUrl = String.format(m2.group(1));
-					urls.add(postUrl);
-				}
-				if (urls.size() == 0) {
-					msg = nyasha + ": " + m.group(1) +" не няшка!";
-				} else {
-					Random random = new Random();
-					msg = nyasha + ": " + urls.get(random.nextInt(urls.size()));
-				}	
-			} catch (IOException e) {
-				 log("Ошибка ввода-вывода при чтении страницы", e);
-				 return "Няшки закрыты на ремонт.";
-			}
+		final String userNick = getUserNick(message);
+
+		final String nyakaName;
+		if ("няшку".equals(m.group(1))) {
+			nyakaName = "";
+		} else {
+			nyakaName = m.group(1);
+		}
+		if (nyakaName == null) {
+			return userNick + ": у няшек тихий час, их нельзя постить.";
+		}
+
+		final List<String> urls = getGelbooruLinks(nyakaName);
+		if (urls.size() == 0) {
+			return userNick + ": " + (
+					(nyakaName.length() > 0) ?
+							(nyakaName + " не няшка!") :
+							"няшки кончились."
+			);
+		} else {
+			return userNick + ": " + urls.get(ThreadLocalRandom.current().nextInt(urls.size()));
 		}
 	}
-	
-	private static void log(final String message, final Exception e) {
-		System.out.println(message);
-		if (e != null) {
-			e.printStackTrace();
+
+	private List<String> getGelbooruLinks(final String nyakaName) throws MessageProcessingException {
+		final URL gelbooru;
+		try {
+			gelbooru = new URL(
+					"http://gelbooru.com/index.php?page=dapi&s=post&q=index&limit=10000&tags=solo+" +
+							nyakaName
+			);
+		} catch (MalformedURLException e) {
+			throw new MessageProcessingException(e);
+		}
+		final List<String> urls = new ArrayList<>();
+		try (BufferedReader in = new BufferedReader(new InputStreamReader(gelbooru.openStream()))) {
+			String inputLine;
+			while ((inputLine = in.readLine()) != null) {
+				final Matcher entryMatcher = PICTURE_LIST_ENTRY_PATTERN.matcher(inputLine);
+				while (entryMatcher.find()) {
+					final String postUrl = String.format(entryMatcher.group(1));
+					urls.add(postUrl);
+				}
+			}
+		} catch (IOException e) {
+			throw new MessageProcessingException(e);
+		}
+		return urls;
+	}
+
+	private String getUserNick(final Message message) throws MessageProcessingException {
+		final Matcher matcher = USER_NICK_PATTERN.matcher(message.getFrom());
+		if (matcher.matches()) {
+			return matcher.group(1);
+		} else {
+			throw new MessageProcessingException("Failed to parse nickname from message's author");
 		}
 	}
 }

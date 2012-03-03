@@ -7,4 +7,11 @@ package ru.yinfag.chitose;
  * @author Yanus Poluektovich (ypoluektovich@gmail.com)
  */
 public class MessageProcessingException extends Exception {
+	public MessageProcessingException(final String message) {
+		super(message);
+	}
+
+	public MessageProcessingException(final Throwable cause) {
+		super(cause);
+	}
 }

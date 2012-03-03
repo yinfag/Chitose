@@ -15,7 +15,6 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicMarkableReference;
@@ -25,8 +24,6 @@ import java.util.regex.Pattern;
 class ChitoseMUCListener implements PacketListener {
 	// регэкспы регэкспушки
 	private static final Pattern p = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?кинь.*?(\\d+)[dд](\\d+)");
-	private static final Pattern p1 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?(?:(?:запости)|(?:доставь)).*?(?:([\\w().*\\+]+?)|(няшку))\\.?$");
-	private static final Pattern p2 = Pattern.compile("sample_url=\"(.+?)\"");
 	private static final Pattern p3 = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?расскажи.*?про \"(.+?)\"");
 	private static final String p4 = "отсортировано по дате выхода";
 	private static final Pattern p5 = Pattern.compile("\\'estimation\\'\\>(.+?)\\&nbsp");
@@ -104,21 +101,25 @@ class ChitoseMUCListener implements PacketListener {
 			return;
 		}
 
+		CharSequence answer = null;
 		for (final MessageProcessor processor : messageProcessors) {
 			try {
-				final CharSequence result = processor.process(message);
-				if (result == null) {
-					continue;
-				}
-				try {
-					muc.sendMessage(result.toString());
-				} catch (XMPPException e) {
-					log("Failed to send a message", e);
-				}
-				return;
+				answer = processor.process(message);
 			} catch (MessageProcessingException e) {
 				log("Error while processing a message with " + processor, e);
+				answer = "Няшки закрыты на ремонт.";
 			}
+			if (answer != null) {
+				break;
+			}
+		}
+		if (answer != null) {
+			try {
+				muc.sendMessage(answer.toString());
+			} catch (XMPPException e) {
+				log("Failed to send a message", e);
+			}
+			return;
 		}
 
 		//тырим описание с вротарта
