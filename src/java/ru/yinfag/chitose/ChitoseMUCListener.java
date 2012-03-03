@@ -72,6 +72,7 @@ class ChitoseMUCListener implements PacketListener {
 	private void populateMessageProcessors(final Properties props) {
 		messageProcessors.add(new SmoochMessageProcessor());
 		messageProcessors.add(new URLExpander(props));
+		messageProcessors.add(new GelbooruMessageProcessor());
 	}
 	
 
@@ -120,102 +121,6 @@ class ChitoseMUCListener implements PacketListener {
 			}
 		}
 
-		//отвечаем на определённую строку случайным ответом
-		if ("Янус - няша?".equals(message.getBody())) {
-			int rnum = r.nextInt(2);
-			if (rnum == 0) {
-				try {
-					muc.sendMessage("Няша конечно же. Учит джаве всех итц. ^^");
-				} catch (XMPPException e) {
-					e.printStackTrace();
-				}
-			} else if (rnum == 1) {
-				try {
-					muc.sendMessage("Янус - быдло ёбаное, и задрал итц всех своей джавой. ><");
-				} catch (XMPPException e) {
-					e.printStackTrace();
-				}
-			}
-			return;
-		}
-		//постим няшек
-		Matcher m1 = p1.matcher(message.getBody());
-		if (m1.matches()) {
-			
-			//имя пославшего запрос
-			Matcher m11 = p11.matcher(message.getFrom());
-			String nyasha = "";
-			if (m11.matches()) {
-				nyasha = m11.group(1);
-			}
-			
-			URL gelbooru;
-			URLConnection c;
-			int rnum2 = r.nextInt(3);
-			if (rnum2 == 0 || rnum2 == 1) {
-				String nyakaName;
-				if ("няшку".equals(m1.group(2))) {
-					nyakaName = "";
-				} else {
-					nyakaName = m1.group(1);
-				}
-				try {
-					gelbooru = new URL("http://gelbooru.com/index.php?page=dapi&s=post&q=index&limit=10000&tags=solo+"+nyakaName);
-				} catch (MalformedURLException e) {
-					log("Не получилось составить урл для запроса в гелбуру", e);
-					return;
-				}
-				try {
-					c = gelbooru.openConnection();
-				} catch (IOException e) {
-					log("Не получилось открыть соединение с гелбуру", e);
-					return;
-				}
-				c.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.77 Safari/535.7");
-				try (BufferedReader in = new BufferedReader(new InputStreamReader(c.getInputStream()))) {
-					String inputLine;
-					final List<String> urls = new ArrayList<String>();
-					while ((inputLine = in.readLine()) != null) {
-						Matcher m2 = p2.matcher(inputLine);
-						if (!m2.find()) {
-							continue;
-						}
-						final String postUrl = String.format(m2.group(1));
-						urls.add(postUrl);
-					}
-					if (urls.size() == 0) {
-						try {
-							muc.sendMessage(nyasha + ": " + m1.group(1) +" не няшка!");
-						} catch (XMPPException e1) {
-								e1.printStackTrace();
-						}
-						return;
-					}
-					try {
-						Random random = new Random();
-						muc.sendMessage(nyasha + ": " + urls.get(random.nextInt(urls.size())));
-					} catch (XMPPException e) {
-						e.printStackTrace();
-					}
-					
-				} catch (IOException e) {
-					 log("Ошибка ввода-вывода при чтении страницы", e);
-					 try {
-						 muc.sendMessage("Няшки закрыты на ремонт.");
-					 } catch (XMPPException e1) {
-						e1.printStackTrace();
-					}
-				}
-			}
-			if (rnum2 == 2) {
-				try {
-					muc.sendMessage(nyasha + ": " + "gelbooru.com - Все няшки там. Удачи, лентяй.");
-				} catch (XMPPException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-				
 		//тырим описание с вротарта
 		Matcher m3 = p3.matcher(message.getBody());
 		if (m3.matches()) {
