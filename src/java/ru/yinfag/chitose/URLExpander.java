@@ -6,15 +6,26 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class URLExpander implements MessageProcessor {
 
-	public static final Pattern PATTERN = Pattern.compile("http://goo\\.gl/\\w+");
+	private static final Pattern PATTERN = Pattern.compile("http://goo\\.gl/\\w+");
+
+	private final boolean enabled;
+
+	public URLExpander(final Properties props) {
+		enabled = "1".equals(props.getProperty("urlExpandEnabled"));
+	}
 
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
+		if (!enabled) {
+			return null;
+		}
+
 		final Matcher m = PATTERN.matcher(message.getBody());
 		StringBuilder urlExpanderSB = null;
 		while (m.find()) {

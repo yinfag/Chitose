@@ -71,9 +71,7 @@ class ChitoseMUCListener implements PacketListener {
 
 	private void populateMessageProcessors(final Properties props) {
 		messageProcessors.add(new SmoochMessageProcessor());
-		if ("1".equals(props.getProperty("urlExpandEnabled"))) {
-			messageProcessors.add(new URLExpander());
-		}
+		messageProcessors.add(new URLExpander(props));
 	}
 	
 
