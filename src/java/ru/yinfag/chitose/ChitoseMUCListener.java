@@ -41,6 +41,11 @@ class ChitoseMUCListener implements PacketListener {
 	
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
 	
+	private final List<MessageProcessor> messageProcessors = new ArrayList<>();
+	{
+		messageProcessors.add(new SmoochMessageProcessor());
+	}
+	
 	private final Map<String, Timer> timers = new HashMap<>();
 
 	static {
@@ -90,6 +95,7 @@ class ChitoseMUCListener implements PacketListener {
 
 	private void processMessage(final Message message) {
 		System.out.println("message from " + message.getFrom());
+		// if this is a message from ourselves, don't react to it
 		if (
 				(conference + "/" + nick.getReference()).equals(message.getFrom()) ||
 						jid.equals(message.getFrom())
@@ -97,15 +103,23 @@ class ChitoseMUCListener implements PacketListener {
 			return;
 		}
 
-		//отвечаем в чятик на определённое слово
-		if ("*smooch*".equals(message.getBody())) {
+		for (final MessageProcessor processor : messageProcessors) {
 			try {
-				muc.sendMessage("*nosebleed*");
-			} catch (XMPPException e) {
-				e.printStackTrace();
+				final CharSequence result = processor.process(message);
+				if (result == null) {
+					continue;
+				}
+				try {
+					muc.sendMessage(result.toString());
+				} catch (XMPPException e) {
+					log("Failed to send a message", e);
+				}
+				return;
+			} catch (MessageProcessingException e) {
+				log("Error while processing a message with " + processor, e);
 			}
-			return;
 		}
+
 		//отвечаем на определённую строку случайным ответом
 		if ("Янус - няша?".equals(message.getBody())) {
 			int rnum = r.nextInt(2);
