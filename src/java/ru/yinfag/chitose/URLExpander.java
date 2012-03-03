@@ -47,7 +47,7 @@ public class URLExpander implements MessageProcessor {
 				con.setInstanceFollowRedirects(false);
 				con.connect();
 			} catch (IOException e) {
-				log("Не получилось открыть соединение", e);
+				log("Не получилось открыть соединение для " + shortUrlString, e);
 				urlExpanderSB.append("(не удалось открыть соединение)");
 				continue;
 			}
