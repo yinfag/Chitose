@@ -44,6 +44,7 @@ class ChitoseMUCListener implements PacketListener {
 	private final List<MessageProcessor> messageProcessors = new ArrayList<>();
 	{
 		messageProcessors.add(new SmoochMessageProcessor());
+		messageProcessors.add(new URLExpander());
 	}
 	
 	private final Map<String, Timer> timers = new HashMap<>();
@@ -386,44 +387,6 @@ class ChitoseMUCListener implements PacketListener {
 			}
 		}
 
-		//раскрываем ссылки
-		if (urlExpandEnabled) {
-			final Matcher m10 = p10.matcher(message.getBody());
-			StringBuilder urlExpanderSB = null;
-			while (m10.find()) {
-				if (urlExpanderSB == null) {
-					urlExpanderSB = new StringBuilder("Короткие урлы ведут сюда:");
-				}
-				final String shortUrlString = m10.group(0);
-				urlExpanderSB.append("\n").append(shortUrlString).append(" -> ");
-				final URL shortUrl;
-				try {
-					shortUrl = new URL(shortUrlString);
-				} catch (MalformedURLException e) {
-					urlExpanderSB.append("(плохой урл почему-то)");
-					continue;
-				}
-				final HttpURLConnection con;
-				try {
-					con = ((HttpURLConnection) shortUrl.openConnection());
-					con.setInstanceFollowRedirects(false);
-					con.connect();
-				} catch (IOException e) {
-					log("Не получилось открыть соединение", e);
-					urlExpanderSB.append("(не удалось открыть соединение)");
-					continue;
-				}
-				urlExpanderSB.append(con.getHeaderField("Location"));
-			}
-			if (urlExpanderSB != null) {
-				try {
-					muc.sendMessage(urlExpanderSB.toString());
-				} catch (XMPPException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-		
 		//Таймер
 		Matcher m12 = p12.matcher(message.getBody());
 		if (m12.matches()) {
