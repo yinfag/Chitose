@@ -1,20 +1,21 @@
 package ru.yinfag.chitose;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.jivesoftware.smack.packet.Message;
-import java.net.URL;
-import java.net.MalformedURLException;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
-
-
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class URLExpander implements MessageProcessor {
+
+	public static final Pattern PATTERN = Pattern.compile("http://goo\\.gl/\\w+");
+
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
-		Pattern p = Pattern.compile("http://goo\\.gl/\\w+");
-		final Matcher m = p.matcher(message.getBody());
+		final Matcher m = PATTERN.matcher(message.getBody());
 		StringBuilder urlExpanderSB = null;
 		while (m.find()) {
 			if (urlExpanderSB == null) {
@@ -43,6 +44,7 @@ public class URLExpander implements MessageProcessor {
 		}
 		return urlExpanderSB;
 	}
+
 	private static void log(final String message, final Exception e) {
 		System.out.println(message);
 		if (e != null) {

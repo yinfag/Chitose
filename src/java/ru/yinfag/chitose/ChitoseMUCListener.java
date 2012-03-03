@@ -34,7 +34,6 @@ class ChitoseMUCListener implements PacketListener {
 	private static final String p7 = "<b>Раздел &laquo;анимация&raquo;";
 	private static final Pattern p8 = Pattern.compile("animation\\/animation.php\\?id\\=(\\d+)");
 	private static final String p9 = "<meta http-equiv='Refresh' content='0;";
-	private static final Pattern p10 = Pattern.compile("http://goo\\.gl/\\w+");
 	private static final Pattern p11 = Pattern.compile(".+?@.+?\\..+?\\..+?/(.+?)");
 	private static final Pattern p12 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?напомни.*?о \"(.+?)\" через ([0-9]+).*?(?:(?:минут)|(?:минуты)|(?:минуту))");
 	private static final Pattern p13 = Pattern.compile(".*?([А-Яа-яA-Za-z_ё]+?)\\.(?:(?:жпг)|(?:жпег)|(?:jpg)|(?:пнг)|(?:гиф))");
