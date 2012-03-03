@@ -8,19 +8,19 @@ import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.MUCUser;
-import java.net.*;
-import java.io.*;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.*;
-import java.util.Properties;
-import java.net.URLEncoder;
-
 
 class ChitoseMUCListener implements PacketListener {
 	// регэкспы регэкспушки
@@ -37,22 +37,17 @@ class ChitoseMUCListener implements PacketListener {
 	private static final Pattern p11 = Pattern.compile(".+?@.+?\\..+?\\..+?/(.+?)");
 	private static final Pattern p12 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?напомни.*?о \"(.+?)\" через ([0-9]+).*?(?:(?:минут)|(?:минуты)|(?:минуту))");
 	private static final Pattern p13 = Pattern.compile(".*?([А-Яа-яA-Za-z_ё]+?)\\.(?:(?:жпг)|(?:жпег)|(?:jpg)|(?:пнг)|(?:гиф))");
-	
+
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
-	
-	private final List<MessageProcessor> messageProcessors = new ArrayList<>();
-	{
-		messageProcessors.add(new SmoochMessageProcessor());
-		messageProcessors.add(new URLExpander());
-	}
-	
-	private final Map<String, Timer> timers = new HashMap<>();
 
 	static {
 		VOICED_ROLES.add("participant");
 		VOICED_ROLES.add("moderator");
 	}
 
+	private final List<MessageProcessor> messageProcessors = new ArrayList<>();
+
+	private final Map<String, Timer> timers = new HashMap<>();
 
 	private final MultiUserChat muc;
 
@@ -62,7 +57,6 @@ class ChitoseMUCListener implements PacketListener {
 	private final String conference;
 	private final String defaultNickname;
 	private final String jid;
-	private final boolean urlExpandEnabled;
 	private final AtomicMarkableReference<String> nick;
 
 	ChitoseMUCListener(final MultiUserChat muc, final Properties props) {
@@ -71,7 +65,15 @@ class ChitoseMUCListener implements PacketListener {
 		defaultNickname = props.getProperty("nickname");
 		nick = new AtomicMarkableReference<>(defaultNickname, false);
 		jid = props.getProperty("login") + "@" + props.getProperty("domain") + "/" + props.getProperty("resource");
-		urlExpandEnabled = "1".equals(props.getProperty("urlExpandEnabled"));
+
+		populateMessageProcessors(props);
+	}
+
+	private void populateMessageProcessors(final Properties props) {
+		messageProcessors.add(new SmoochMessageProcessor());
+		if ("1".equals(props.getProperty("urlExpandEnabled"))) {
+			messageProcessors.add(new URLExpander());
+		}
 	}
 	
 
