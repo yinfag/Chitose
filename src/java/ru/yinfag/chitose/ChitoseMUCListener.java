@@ -48,8 +48,8 @@ class ChitoseMUCListener implements PacketListener {
 		messageProcessors.add(new JpgToMessageProcessor());
 		messageProcessors.add(new WorldArtMessageProcessor());
 		messageProcessors.add(new TimerMessageProcessor(muc));
+		messageProcessors.add(new HelpMessageProcessor());
 	}
-	
 
 	public PacketListener newProxypacketListener() {
 		return new PacketListener() {
