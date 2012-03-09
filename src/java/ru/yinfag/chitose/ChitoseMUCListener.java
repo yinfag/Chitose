@@ -9,29 +9,10 @@ import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.MUCUser;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicMarkableReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 class ChitoseMUCListener implements PacketListener {
-	// регэкспы регэкспушки
-	private static final Pattern p3 = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?расскажи.*?про \"(.+?)\"");
-	private static final String p4 = "отсортировано по дате выхода";
-	private static final Pattern p5 = Pattern.compile("'estimation'>(.+?)&nbsp");
-	private static final Pattern p6 = Pattern.compile("Краткое содержание:.*?class='review'>(.+?)</p>");
-	private static final String p7 = "<b>Раздел &laquo;анимация&raquo;";
-	private static final Pattern p8 = Pattern.compile("animation/animation.php\\?id=(\\d+)");
-	private static final String p9 = "<meta http-equiv='Refresh' content='0;";
-	private static final Pattern p11 = Pattern.compile(".+?@.+?\\..+?\\..+?/(.+?)");
-	private static final Pattern p12 = Pattern.compile(".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?напомни.*?о \"(.+?)\" через ([0-9]+).*?(?:(?:минут)|(?:минуты)|(?:минуту))");
 
 	private static final Set<String> VOICED_ROLES = new HashSet<>();
 
@@ -42,13 +23,8 @@ class ChitoseMUCListener implements PacketListener {
 
 	private final List<MessageProcessor> messageProcessors = new ArrayList<>();
 
-	private final Map<String, Timer> timers = new HashMap<>();
-
 	private final MultiUserChat muc;
 
-	// r - рандом
-	private final Random r = new Random();
-	
 	private final String conference;
 	private final String defaultNickname;
 	private final String jid;
@@ -121,7 +97,6 @@ class ChitoseMUCListener implements PacketListener {
 			} catch (XMPPException e) {
 				log("Failed to send a message", e);
 			}
-			return;
 		}
 	}
 	private void processPresence(final Presence presence) {
