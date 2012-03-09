@@ -61,16 +61,17 @@ class ChitoseMUCListener implements PacketListener {
 		nick = new AtomicMarkableReference<>(defaultNickname, false);
 		jid = props.getProperty("login") + "@" + props.getProperty("domain") + "/" + props.getProperty("resource");
 
-		populateMessageProcessors(props);
+		populateMessageProcessors(props, muc);
 	}
 
-	private void populateMessageProcessors(final Properties props) {
+	private void populateMessageProcessors(final Properties props, final MultiUserChat muc) {
 		messageProcessors.add(new SmoochMessageProcessor());
 		messageProcessors.add(new URLExpander(props));
 		messageProcessors.add(new GelbooruMessageProcessor());
 		messageProcessors.add(new DiceMessageProcessor());
 		messageProcessors.add(new JpgToMessageProcessor());
 		messageProcessors.add(new WorldArtMessageProcessor());
+		messageProcessors.add(new TimerMessageProcessor(muc));
 	}
 	
 
@@ -122,68 +123,7 @@ class ChitoseMUCListener implements PacketListener {
 			}
 			return;
 		}
-
-		//Таймер
-		Matcher m12 = p12.matcher(message.getBody());
-		if (m12.matches()) {
-			
-			//имя пославшего запрос
-			Matcher m11 = p11.matcher(message.getFrom());
-			String nyasha = "";
-			if (m11.matches()) {
-				nyasha = m11.group(1);
-			}
-			final String nyashaFinal = nyasha;
-			
-			
-			String timeMinute = m12.group(2);
-			final String sage = m12.group(1);	
-			long timeMinuteLong = 0;
-			try {
-				timeMinuteLong =  Long.parseLong(timeMinute.trim());
-			} catch (NumberFormatException e) {
-				log ("Ошибка перевода стринг в лонг", e);
-			}
-			final String pseudoJid = message.getFrom();
-			boolean oldTimer = timers.containsKey(pseudoJid);
-			if (oldTimer) {
-				timers.remove(pseudoJid).cancel();
-				
-			}
-			Timer timer = new Timer();
-			timers.put(pseudoJid, timer);
-			TimerTask task = new TimerTask() {
-				public void run()
-				{
-					timers.remove(pseudoJid);
-					try {
-						muc.sendMessage(nyashaFinal + ": Напоминаю! " + "\n" + sage);
-					} catch (XMPPException e) {
-						log("Напоминание сфейлилось", e);
-					}
-				}
-			};
-			if (timeMinuteLong != 0 && oldTimer ) {
-				long time = timeMinuteLong * 60000;
-				timer.schedule(task, time);
-				try {
-					muc.sendMessage(nyashaFinal + ": таймер изменён!");
-				} catch (XMPPException e) {
-					log("Failed to say таймер изменён :3", e);
-				}
-			} else if (timeMinuteLong != 0) {
-				long time = timeMinuteLong * 60000;
-				timer.schedule(task, time);
-				try {
-					muc.sendMessage(nyashaFinal + ": окей!");
-				} catch (XMPPException e) {
-					log("Failed to say окей :3", e);
-				}
-			}
-		}
-		
 	}
-
 	private void processPresence(final Presence presence) {
 		System.out.println(presence.getFrom());
 		if ((conference + "/" + nick.getReference()).equals(presence.getFrom())) {
