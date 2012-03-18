@@ -12,14 +12,20 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Properties;
 
 public class GelbooruMessageProcessor implements MessageProcessor {
 
-	private static final Pattern COMMAND_PATTERN = Pattern.compile(
-			".*?(?:(?:Chitose)|(?:[Чч]итосе)).*?(?:(?:запости)|(?:доставь)).+?([\\w().*+]+|(?:няшку))[.!]?"
-	);
-
 	private static final Pattern PICTURE_LIST_ENTRY_PATTERN = Pattern.compile("sample_url=\"(.+?)\"");
+	private final String botname;
+	private final String regex;
+	private final Pattern COMMAND_PATTERN;
+
+	GelbooruMessageProcessor(final Properties props) {
+		botname = props.getProperty("nickname");
+		regex = ".*?" + botname + ".*?(?:(?:запости)|(?:доставь)).+?([\\w().*+]+|(?:няшку))[.!]?";
+		COMMAND_PATTERN = Pattern.compile(regex);
+	}
 
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {

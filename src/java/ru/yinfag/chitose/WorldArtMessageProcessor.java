@@ -13,12 +13,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Properties;
 
 public class WorldArtMessageProcessor implements MessageProcessor {
 	
-	private static final Pattern COMMAND_PATTERN = Pattern.compile(
-			"(?:(?:Chitose)|(?:[Чч]итосе)).*?расскажи.*?про \"(.+?)\""
-	);
+	private final Pattern COMMAND_PATTERN;
+	private final String botname;
+	private final String regex;
 
 	private static final String MULTIPLE_TITLES_INDICATOR = "отсортировано по дате выхода";
 
@@ -31,6 +32,12 @@ public class WorldArtMessageProcessor implements MessageProcessor {
 	private static final Pattern TITLE_ENTRY_PATTERN = Pattern.compile("animation/animation.php\\?id=(\\d+)");
 
 	private static final String META_REFRESH = "<meta http-equiv='Refresh' content='0;";
+	
+	WorldArtMessageProcessor(final Properties props) {
+		botname = props.getProperty("nickname");
+		regex = ".*?"+botname+".*?расскажи.*?про \"(.+?)\"";
+		COMMAND_PATTERN = Pattern.compile(regex);
+	}
 	
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {

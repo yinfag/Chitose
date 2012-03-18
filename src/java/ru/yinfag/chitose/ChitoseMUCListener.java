@@ -43,12 +43,12 @@ class ChitoseMUCListener implements PacketListener {
 	private void populateMessageProcessors(final Properties props, final MultiUserChat muc) {
 		messageProcessors.add(new SmoochMessageProcessor());
 		messageProcessors.add(new URLExpander(props));
-		messageProcessors.add(new GelbooruMessageProcessor());
-		messageProcessors.add(new DiceMessageProcessor());
+		messageProcessors.add(new GelbooruMessageProcessor(props));
+		messageProcessors.add(new DiceMessageProcessor(props));
 		messageProcessors.add(new JpgToMessageProcessor());
-		messageProcessors.add(new WorldArtMessageProcessor());
-		messageProcessors.add(new TimerMessageProcessor(muc));
-		messageProcessors.add(new HelpMessageProcessor());
+		messageProcessors.add(new WorldArtMessageProcessor(props));
+		messageProcessors.add(new TimerMessageProcessor(props, muc));
+		messageProcessors.add(new HelpMessageProcessor(props));
 	}
 
 	public PacketListener newProxypacketListener() {

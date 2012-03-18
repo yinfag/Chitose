@@ -10,17 +10,20 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Properties;
 
 public class TimerMessageProcessor implements MessageProcessor {
 
-	private static final Pattern p = Pattern.compile(
-			".*?(?:Chitose|[Чч]итосе).*?напомни.*?о \"(.+?)\" через ([1-9][0-9]*).*?(?:минут[ыу]?)"
-	);
-
 	private final MultiUserChat muc;
-
-	TimerMessageProcessor(final MultiUserChat muc) {
+	private final String botname;
+	private final String regex;
+	private final Pattern p;
+	
+	TimerMessageProcessor(final Properties props, final MultiUserChat muc) {
 		this.muc = muc;
+		botname = props.getProperty("nickname");
+		regex = ".*?" + botname + ".*?напомни.*?о \"(.+?)\" через ([1-9][0-9]*).*?(?:минут[ыу]?)";
+		p = Pattern.compile(regex);
 	}
 
 	private final Map<String, Timer> timers = new HashMap<>();

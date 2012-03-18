@@ -2,20 +2,31 @@ package ru.yinfag.chitose;
 
 import org.jivesoftware.smack.packet.Message;
 
+
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Properties;
 
 /**
  * @author Yanus Poluektovich (ypoluektovich@gmail.com)
  */
 public class DiceMessageProcessor implements MessageProcessor {
-
-	private static final Pattern COMMAND_PATTERN = Pattern.compile("(?:(?:Chitose)|(?:[Чч]итосе)).*?кинь.*?(\\d+)[dд](\\d+)");
+	
+	private final String botname;
+	private final String regex;
+	private final Pattern COMMAND_PATTERN;
+	
+	DiceMessageProcessor(final Properties props) {
+		botname = props.getProperty("nickname");
+		regex = ".*?" + botname + ".*?кинь.*?(\\d+)[dд](\\d+)";
+		COMMAND_PATTERN = Pattern.compile(regex);
+	}
 
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
+		
 		final Matcher m = COMMAND_PATTERN.matcher(message.getBody());
 		if (!m.matches()) {
 			return null;
@@ -37,6 +48,6 @@ public class DiceMessageProcessor implements MessageProcessor {
 		for (int i = 0; i < diceCount; i++) {
 			result += random.nextInt(dieSides) + 1;
 		}
-		return "Выпало " + result + ", такие дела, нян!";
+		return userNick + "Выпало " + result + ", такие дела, нян!";
 	}
 }
