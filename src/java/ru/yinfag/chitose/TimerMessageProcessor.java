@@ -15,14 +15,12 @@ import java.util.Properties;
 public class TimerMessageProcessor implements MessageProcessor {
 
 	private final MultiUserChat muc;
-	private final String botname;
-	private final String regex;
 	private final Pattern p;
 	
 	TimerMessageProcessor(final Properties props, final MultiUserChat muc) {
 		this.muc = muc;
-		botname = props.getProperty("nickname");
-		regex = ".*?" + botname + ".*?напомни.*?о \"(.+?)\" через ([1-9][0-9]*).*?(?:минут[ыу]?)";
+		String botname = props.getProperty("nickname");
+		String regex = ".*?" + botname + ".*?напомни.*?о \"(.+?)\" через ([1-9][0-9]*).*?(?:минут[ыу]?)";
 		p = Pattern.compile(regex);
 	}
 

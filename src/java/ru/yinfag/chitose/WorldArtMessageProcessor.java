@@ -18,8 +18,6 @@ import java.util.Properties;
 public class WorldArtMessageProcessor implements MessageProcessor {
 	
 	private final Pattern COMMAND_PATTERN;
-	private final String botname;
-	private final String regex;
 
 	private static final String MULTIPLE_TITLES_INDICATOR = "отсортировано по дате выхода";
 
@@ -34,8 +32,8 @@ public class WorldArtMessageProcessor implements MessageProcessor {
 	private static final String META_REFRESH = "<meta http-equiv='Refresh' content='0;";
 	
 	WorldArtMessageProcessor(final Properties props) {
-		botname = props.getProperty("nickname");
-		regex = ".*?"+botname+".*?расскажи.*?про \"(.+?)\"";
+		String botname = props.getProperty("nickname");
+		String regex = ".*?"+botname+".*?расскажи.*?про \"(.+?)\"";
 		COMMAND_PATTERN = Pattern.compile(regex);
 	}
 	

@@ -14,13 +14,11 @@ import java.util.Properties;
  */
 public class DiceMessageProcessor implements MessageProcessor {
 	
-	private final String botname;
-	private final String regex;
 	private final Pattern COMMAND_PATTERN;
 	
 	DiceMessageProcessor(final Properties props) {
-		botname = props.getProperty("nickname");
-		regex = ".*?" + botname + ".*?кинь.*?(\\d+)[dд](\\d+)";
+		String botname = props.getProperty("nickname");
+		String regex = ".*?" + botname + ".*?кинь.*?(\\d+)[dд](\\d+)";
 		COMMAND_PATTERN = Pattern.compile(regex);
 	}
 

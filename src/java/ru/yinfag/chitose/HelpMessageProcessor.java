@@ -9,13 +9,11 @@ import java.util.Properties;
 public class HelpMessageProcessor implements MessageProcessor {
 
 	private final Pattern PATTERN;
-	private final String botname;
-	private final String regex;
 	private final String HELP_MESSAGE;
 	
 	HelpMessageProcessor(final Properties props) {
-		botname = props.getProperty("nickname");
-		regex = ".*?" + botname + ".*?(?:[Хх]елп|[Hh]elp)";
+		String botname = props.getProperty("nickname");
+		String regex = ".*?" + botname + ".*?(?:[Хх]елп|[Hh]elp)";
 		PATTERN = Pattern.compile(regex);
 		HELP_MESSAGE =
 		"\nКидаем кубики: "+botname+", кинь 2d6" +
