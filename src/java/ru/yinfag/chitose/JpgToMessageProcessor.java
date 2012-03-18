@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
  */
 public class JpgToMessageProcessor implements MessageProcessor {
 
-	private static final Pattern COMMAND_PATTERN = Pattern.compile(".*?([А-Яа-яA-Za-z_ё]+?)\\.(?:(?:жпг)|(?:жпег)|(?:jpg)|(?:пнг)|(?:гиф))");
+	private static final Pattern COMMAND_PATTERN = Pattern.compile("(?<!http)([А-Яа-яA-Za-z_ё]+?)\\.(?:(?:жпг)|(?:жпег)|(?:jpg)|(?:пнг)|(?:гиф))");
 
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
