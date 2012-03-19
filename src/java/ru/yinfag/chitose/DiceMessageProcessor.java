@@ -46,6 +46,6 @@ public class DiceMessageProcessor implements MessageProcessor {
 		for (int i = 0; i < diceCount; i++) {
 			result += random.nextInt(dieSides) + 1;
 		}
-		return userNick + "Выпало " + result + ", такие дела, нян!";
+		return userNick + ": Выпало " + result + ", такие дела, нян!";
 	}
 }
