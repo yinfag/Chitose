@@ -29,7 +29,7 @@ import java.util.Properties;
 public class GoogleMessageProcessor implements MessageProcessor {
 	
 	private static final Pattern COMMAND_PATTERN = Pattern.compile(
-		"^ *(?:по)*[g|г](?:угл|oogle)*и* +(.*)$",
+		"^ *(?:по)*[gг](?:угл|oogle)*и* +(.*)$",
 		Pattern.CASE_INSENSITIVE + Pattern.UNICODE_CASE		
 	);
 	
