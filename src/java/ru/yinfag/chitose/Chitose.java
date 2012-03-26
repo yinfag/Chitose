@@ -1,80 +1,95 @@
 package ru.yinfag.chitose;
-import java.util.Scanner;
+
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
-import java.util.Properties;
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Properties;
+import java.util.Scanner;
+
+/**
+ * Chitose's main class. Contains the application entry point.
+ */
 public class Chitose {
-	public static void main(String[] args) {
-		//получаем настройки для бота
-		Properties props = new Properties();
-		try (final InputStreamReader isr = new InputStreamReader(new BufferedInputStream(new FileInputStream("chitose.cfg")), "UTF-8")) {
-			props.load(isr);	
-		} catch (FileNotFoundException e) {
-			log ("Файл нинайдин", e);
-		} catch (UnsupportedEncodingException e) {
-			log ("ошибка лол", e);
-		} catch (IOException e) {
-			log ("ошибка ёпт", e);
-		} catch (IllegalArgumentException e) {
-			log ("ошибка ёпт", e);
+
+	/**
+	 * Application entry point. Handles loading of configuration files,
+	 * connecting to server, joining chat rooms, waiting for exit command,
+	 * disconnecting.
+	 *
+	 * @param args    command line arguments. Ignored.
+	 */
+	public static void main(final String[] args) {
+		// load Chitose's settings
+		final Properties props = new Properties();
+		try (final Reader reader = Files.newBufferedReader(
+				Paths.get("chitose.cfg"),
+				Charset.forName("UTF-8")
+		)) {
+			props.load(reader);
+		} catch (IOException | IllegalArgumentException e) {
+			log("Failed to load chitose.cfg", e);
+			return;
 		}
-		String domain = props.getProperty("domain");
-		String login = props.getProperty("login");
-		String pass = props.getProperty("password");
-		String resourse = props.getProperty("resourse");
-		//String conf = props.getProperty("conference");
-		String nickname = props.getProperty("nickname");
-		String urlExpandEnabled = props.getProperty("urlExpandEnabled");		
-		String httpUserAgent = props.getProperty("httpUserAgent");
-		String httpAcceptLanguage = props.getProperty("httpAcceptLanguage");
-		String googleDomain = props.getProperty("googleDomain");
-		//получить соединение
-		final XMPPConnection conn = new XMPPConnection(domain);
-		//подключиться
+
+		final List<String> chatrooms;
+		try {
+			chatrooms = Files.readAllLines(
+					Paths.get("chatrooms.cfg"),
+					Charset.forName("UTF-8")
+			);
+		} catch (IOException e) {
+			log("Failed to load chatroom list", e);
+			return;
+		}
+
+		// get a connection object and connect
+		final XMPPConnection conn =
+				new XMPPConnection(props.getProperty("domain"));
 		try {
 			conn.connect();
 		} catch (XMPPException e) {
 			log("Failed to connect to server", e);
 			return;
 		}
+
 		try {
-			//логинимся
+			// attempt login
 			try {
-				conn.login(login, pass, resourse);
+				conn.login(
+						props.getProperty("login"),
+						props.getProperty("password"),
+						props.getProperty("resource")
+				);
 			} catch (XMPPException e) {
 				log("Failed to login", e);
 				return;
 			}
-			
-			List<String> confs = new ArrayList<>();
-			
-			try (BufferedReader in = new BufferedReader(new InputStreamReader(new BufferedInputStream(new FileInputStream("conference.txt")), "UTF-8"))) {
-				String inputLine;
-				while ((inputLine = in.readLine()) != null) {
-					confs.add(inputLine);
-				}
-			} catch (IOException e) {
-				log("conference.txt error", e);
-			} 
-			
-			for (int i = 0; i < confs.size(); i++) {
-				String conf = confs.get(i);
-				final MultiUserChat muc = new MultiUserChat(conn, conf);
-				//эта штука добавляет слушатель сообщений.
-				ChitoseMUCListener mucListener = new ChitoseMUCListener(muc, props);
-				muc.addParticipantListener(mucListener.newProxypacketListener());
-				muc.addMessageListener(mucListener.newProxypacketListener());
 
-				//отказываемся от истории, чтобы бот не отвечал на всякое левое говно
-				DiscussionHistory history = new DiscussionHistory();
+			final String nickname = props.getProperty("nickname");
+
+			// join all listed conferences
+			for (final String chatroom : chatrooms) {
+				final MultiUserChat muc = new MultiUserChat(conn, chatroom);
+
+				// add message and presence listeners
+				final ChitoseMUCListener listener =
+						new ChitoseMUCListener(muc, props);
+				muc.addParticipantListener(listener.newProxyPacketListener());
+				muc.addMessageListener(listener.newProxyPacketListener());
+
+				// don't get history of previous messages
+				final DiscussionHistory history = new DiscussionHistory();
 				history.setMaxStanzas(0);
-				//заходим в конфочку				
+
+				// enter the chatroom
 				try {
 					muc.join(nickname, null, history, 5000);
 				} catch (XMPPException e) {
@@ -83,12 +98,14 @@ public class Chitose {
 			}
 			waitForExitCommand();
 		} finally {
-			//дисконектимся
+			// disconnect from server
 			conn.disconnect();
 		}
 	}
 
-	//ждём команды выхода тащемто
+	/**
+	 * This method waits for the user to input the exit command from console.
+	 */
 	private static void waitForExitCommand() {
 		final Scanner sc = new Scanner(System.in, "UTF-8");
 		sc.useDelimiter("\\n");
@@ -100,13 +117,19 @@ public class Chitose {
 		}
 	}
 
-	//сокращаем всякие ебанутые принтлны и стектрейсы
+	/**
+	 * Simple logging facility.
+	 *
+	 * @param message    the message to display.
+	 * @param e          the error to report, or <code>null</code> if it's an
+	 *                      informational message.
+	 */
 	private static void log(final String message, final Exception e) {
 		System.out.println(message);
 		if (e != null) {
 			e.printStackTrace();
 		}
-		//final Exception e;
 	}
+
 }
 		

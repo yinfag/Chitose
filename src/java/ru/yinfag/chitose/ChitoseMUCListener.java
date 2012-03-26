@@ -52,7 +52,7 @@ class ChitoseMUCListener implements PacketListener {
 		messageProcessors.add(new HelpMessageProcessor(props));		
 	}
 
-	public PacketListener newProxypacketListener() {
+	public PacketListener newProxyPacketListener() {
 		return new PacketListener() {
 			@Override
 			public void processPacket(final Packet packet) {
