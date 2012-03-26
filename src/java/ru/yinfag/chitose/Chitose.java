@@ -6,6 +6,8 @@ import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import java.util.Properties;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Chitose {
 	public static void main(String[] args) {
@@ -26,7 +28,7 @@ public class Chitose {
 		String login = props.getProperty("login");
 		String pass = props.getProperty("password");
 		String resourse = props.getProperty("resourse");
-		String conf = props.getProperty("conference");
+		//String conf = props.getProperty("conference");
 		String nickname = props.getProperty("nickname");
 		String urlExpandEnabled = props.getProperty("urlExpandEnabled");		
 		String httpUserAgent = props.getProperty("httpUserAgent");
@@ -49,25 +51,35 @@ public class Chitose {
 				log("Failed to login", e);
 				return;
 			}
-			/*эта штука создает объект, 
-			* который будет управлять нашим общением 
-			* с чат-комнатой "анимуфагс", 
-			* с которой мы соединяемся 
-			* через соединение conn*/
-			final MultiUserChat muc = new MultiUserChat(conn, conf);
-			//эта штука добавляет слушатель сообщений.
-			ChitoseMUCListener mucListener = new ChitoseMUCListener(muc, props);
-			muc.addParticipantListener(mucListener.newProxypacketListener());
-			muc.addMessageListener(mucListener.newProxypacketListener());
+			
+			List<String> confs = new ArrayList<>();
+			
+			try (BufferedReader in = new BufferedReader(new InputStreamReader(new BufferedInputStream(new FileInputStream("conference.txt")), "UTF-8"))) {
+				String inputLine;
+				while ((inputLine = in.readLine()) != null) {
+					confs.add(inputLine);
+				}
+			} catch (IOException e) {
+				log("conference.txt error", e);
+			} 
+			
+			for (int i = 0; i < confs.size(); i++) {
+				String conf = confs.get(i);
+				final MultiUserChat muc = new MultiUserChat(conn, conf);
+				//эта штука добавляет слушатель сообщений.
+				ChitoseMUCListener mucListener = new ChitoseMUCListener(muc, props);
+				muc.addParticipantListener(mucListener.newProxypacketListener());
+				muc.addMessageListener(mucListener.newProxypacketListener());
 
-			//отказываемся от истории, чтобы бот не отвечал на всякое левое говно
-			DiscussionHistory history = new DiscussionHistory();
-			history.setMaxStanzas(0);
-			//заходим в конфочку
-			try {
-				muc.join(nickname, null, history, 5000);
-			} catch (XMPPException e) {
-				log("Failed to join the chat room", e);
+				//отказываемся от истории, чтобы бот не отвечал на всякое левое говно
+				DiscussionHistory history = new DiscussionHistory();
+				history.setMaxStanzas(0);
+				//заходим в конфочку				
+				try {
+					muc.join(nickname, null, history, 5000);
+				} catch (XMPPException e) {
+					log("Failed to join the chat room", e);
+				}
 			}
 			waitForExitCommand();
 		} finally {
