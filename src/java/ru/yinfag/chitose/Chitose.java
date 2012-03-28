@@ -10,7 +10,11 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.Scanner;
+import java.util.Timer;
 
 /**
  * Chitose's main class. Contains the application entry point.
@@ -99,7 +103,7 @@ public class Chitose {
 			}
 
 			final Tokyotosho parser = new Tokyotosho(mucs);
-			final long tokyotoshoUpdatePeriod = 60000 * Long.valueOf(
+			final long tokyotoshoUpdatePeriod = 60000 * Long.parseLong(
 					props.getProperty("tokyotosho.update.period", "10")
 			);
 			tokyotoshoTimer.schedule(parser, 30000, tokyotoshoUpdatePeriod);
