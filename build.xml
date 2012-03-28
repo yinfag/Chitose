@@ -24,7 +24,7 @@
 
     <target name="build" depends="clean">
         <mkdir dir="target/classes"/>
-        <javac srcdir="src/java" includes="**/*.java" destdir="target/classes" source="1.7" target="1.7">
+        <javac srcdir="src/java" includes="**/*.java" destdir="target/classes" source="1.7" target="1.7" debug="true">
             <classpath>
                 <path refid="classpath"/>
             </classpath>

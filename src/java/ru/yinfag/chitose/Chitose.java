@@ -13,6 +13,9 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.ArrayList;
 
 /**
  * Chitose's main class. Contains the application entry point.
@@ -76,9 +79,11 @@ public class Chitose {
 			final String nickname = props.getProperty("nickname");
 
 			// join all listed conferences
+			
+			final List<MultiUserChat> mucs = new ArrayList<>();
 			for (final String chatroom : chatrooms) {
 				final MultiUserChat muc = new MultiUserChat(conn, chatroom);
-
+				mucs.add(muc);
 				// add message and presence listeners
 				final ChitoseMUCListener listener =
 						new ChitoseMUCListener(muc, props);
@@ -96,7 +101,12 @@ public class Chitose {
 					log("Failed to join the chat room", e);
 				}
 			}
+			Timer timer = new Timer();
+			Tokyotosho parser = new Tokyotosho(mucs);
+			long tokyotoshoUpdatePeriod = Long.valueOf("tokyotosho.update.period")*60000;
+			timer.schedule(parser, 30000, tokyotoshoUpdatePeriod);
 			waitForExitCommand();
+			timer.cancel();
 		} finally {
 			// disconnect from server
 			conn.disconnect();
