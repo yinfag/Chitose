@@ -1,21 +1,20 @@
 package ru.yinfag.chitose;
 
-import org.w3c.dom.*;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.DocumentBuilder;
-import java.net.URL;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.util.TimerTask;
-import javax.xml.parsers.FactoryConfigurationError;
-import java.io.IOException;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import java.util.List;
-import javax.xml.parsers.ParserConfigurationException;
-import java.util.ArrayList;
-import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TimerTask;
 
 public class Tokyotosho extends TimerTask implements Runnable {
 	
@@ -37,9 +36,11 @@ public class Tokyotosho extends TimerTask implements Runnable {
 		}
 		final Document doc;
 		try {
-			final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			final DocumentBuilderFactory factory =
+					DocumentBuilderFactory.newInstance();
 			doc = factory.newDocumentBuilder().parse(rss.openStream());
-		} catch (IOException | SAXException | IllegalArgumentException | ParserConfigurationException e) {
+		} catch (IOException | SAXException | IllegalArgumentException |
+				ParserConfigurationException e) {
 			e.printStackTrace();
 			return;
 		}
@@ -57,7 +58,10 @@ public class Tokyotosho extends TimerTask implements Runnable {
 			if (lastTitle != null) {
 				for (final MultiUserChat muc : mucs) {
 					try {
-						muc.sendMessage("Ня, новые торренты на тотошке!\n" + Utils.join(titles, "\n"));
+						muc.sendMessage(
+								"Ня, новые торренты на тотошке!\n" +
+										Utils.join(titles, "\n")
+						);
 					} catch (XMPPException e) {
 						e.printStackTrace();
 					}

@@ -10,12 +10,7 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Properties;
-import java.util.Scanner;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.ArrayList;
+import java.util.*;
 
 /**
  * Chitose's main class. Contains the application entry point.
@@ -63,6 +58,7 @@ public class Chitose {
 			return;
 		}
 
+		final Timer tokyotoshoTimer = new Timer();
 		try {
 			// attempt login
 			try {
@@ -101,13 +97,16 @@ public class Chitose {
 					log("Failed to join the chat room", e);
 				}
 			}
-			Timer timer = new Timer();
-			Tokyotosho parser = new Tokyotosho(mucs);
-			long tokyotoshoUpdatePeriod = Long.valueOf("tokyotosho.update.period")*60000;
-			timer.schedule(parser, 30000, tokyotoshoUpdatePeriod);
+
+			final Tokyotosho parser = new Tokyotosho(mucs);
+			final long tokyotoshoUpdatePeriod = 60000 * Long.valueOf(
+					props.getProperty("tokyotosho.update.period", "10")
+			);
+			tokyotoshoTimer.schedule(parser, 30000, tokyotoshoUpdatePeriod);
+
 			waitForExitCommand();
-			timer.cancel();
 		} finally {
+			tokyotoshoTimer.cancel();
 			// disconnect from server
 			conn.disconnect();
 		}
