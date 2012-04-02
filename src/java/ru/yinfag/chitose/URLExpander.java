@@ -15,19 +15,15 @@ import java.util.Map;
 public class URLExpander implements MessageProcessor {
 
 	private static final Pattern PATTERN = Pattern.compile("http://goo\\.gl/\\w+");
-	private final Map<String, Properties> perMucProps;
+	private final boolean enabled;
 
-	public URLExpander(final Map<String, Properties> perMucProps) {
-		this.perMucProps = perMucProps;
+	public URLExpander(final Properties mucProps) {
+		enabled = "1".equals(mucProps.getProperty("urlExpandEnabled"));
 	}
 
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
-		
-		final String mucJID = MessageProcessorUtils.getMuc(message);
-		final Properties props = perMucProps.get(mucJID);
-		final boolean enabled = "1".equals(props.getProperty("urlExpandEnabled"));
-		
+
 		if (!enabled) {
 			return null;
 		}

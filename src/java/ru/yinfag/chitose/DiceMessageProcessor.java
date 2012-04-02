@@ -16,21 +16,19 @@ import java.util.Map;
  */
 public class DiceMessageProcessor implements MessageProcessor {
 
-	private final Map<String, Properties> perMucProps;
-	DiceMessageProcessor(final Map<String, Properties> perMucProps) {
-		this.perMucProps = perMucProps;
+	private final Pattern COMMAND_PATTERN;
+	private final boolean enabled;
+
+	DiceMessageProcessor(final Properties mucProps) {
+		enabled = "1".equals(mucProps.getProperty("Dice"));
+		final String botname = mucProps.getProperty("nickname");
+		COMMAND_PATTERN = Pattern.compile(
+			".*?" + botname + ".*?кинь.*?(\\d+)[dд](\\d+)"
+		);
 	}
 
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
-		
-		final String mucJID = MessageProcessorUtils.getMuc(message);
-		final Properties props = perMucProps.get(mucJID);
-		final boolean enabled = "1".equals(props.getProperty("Dice"));
-		final String botname = props.getProperty("nickname");
-		final Pattern COMMAND_PATTERN = Pattern.compile(
-			".*?" + botname + ".*?кинь.*?(\\d+)[dд](\\d+)"
-		);
 		
 		if (!enabled) {
 			return null;

@@ -15,10 +15,14 @@ import java.util.Properties;
 public class TimerMessageProcessor implements MessageProcessor {
 
 	private final MultiUserChat muc;
-	private final Map<String, Properties> perMucProps;
-	
-	TimerMessageProcessor(final Map<String, Properties> perMucProps, final MultiUserChat muc) {
-		this.perMucProps = perMucProps;	
+	private final boolean enabled;
+	private final Pattern p;
+	TimerMessageProcessor(final Properties mucProps, final MultiUserChat muc) {
+		enabled = "1".equals(mucProps.getProperty("Timer"));
+		String botname = mucProps.getProperty("nickname");
+		p = Pattern.compile(
+			".*?" + botname + ".*?напомни.*?о \"(.+?)\" через ([1-9][0-9]*).*?(?:минут[ыу]?)"
+		);
 		this.muc = muc;
 	}
 
@@ -26,14 +30,6 @@ public class TimerMessageProcessor implements MessageProcessor {
 	
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
-		
-		final String mucJID = MessageProcessorUtils.getMuc(message);
-		final Properties props = perMucProps.get(mucJID);
-		final boolean enabled = "1".equals(props.getProperty("Timer"));
-		String botname = props.getProperty("nickname");
-		final Pattern p = Pattern.compile(
-			".*?" + botname + ".*?напомни.*?о \"(.+?)\" через ([1-9][0-9]*).*?(?:минут[ыу]?)"
-		);
 		
 		if (!enabled) {
 			return null;

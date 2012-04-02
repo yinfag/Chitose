@@ -14,18 +14,15 @@ import java.util.Properties;
 public class JpgToMessageProcessor implements MessageProcessor {
 
 	private static final Pattern COMMAND_PATTERN = Pattern.compile("(?<!http)([А-Яа-яA-Za-z_ё]+?)\\.(?:(?:жпг)|(?:жпег)|(?:jpg)|(?:пнг)|(?:гиф))");
-	private final Map<String, Properties> perMucProps;
+	private final boolean enabled;
 
-	public JpgToMessageProcessor(final Map<String, Properties> perMucProps) {
-		this.perMucProps = perMucProps;
+	public JpgToMessageProcessor(final Properties mucProps) {
+		enabled = "1".equals(mucProps.getProperty("JpgTo"));	
 	}
 
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
 		
-		final String mucJID = MessageProcessorUtils.getMuc(message);
-		final Properties props = perMucProps.get(mucJID);
-		final boolean enabled = "1".equals(props.getProperty("JpgTo"));
 		
 		if (!enabled) {
 			return null;

@@ -19,22 +19,21 @@ import java.util.Map;
 public class GelbooruMessageProcessor implements MessageProcessor {
 
 	private static final Pattern PICTURE_LIST_ENTRY_PATTERN = Pattern.compile("sample_url=\"(.+?)\"");
-	private final Map<String, Properties> perMucProps;
+	private final boolean enabled;
+	private final Pattern COMMAND_PATTERN;
 	
-	GelbooruMessageProcessor(final Map<String, Properties> perMucProps) {
-				this.perMucProps = perMucProps;
+	GelbooruMessageProcessor(final Properties mucProps) {
+		enabled = "1".equals(mucProps.getProperty("Gelbooru"));
+		final String botname = mucProps.getProperty("nickname");
+		COMMAND_PATTERN = Pattern.compile(
+			".*?" + botname + ".*?(?:(?:запости)|(?:доставь)).+?([\\w().*+]+|(?:няшку))[.!]?"
+		);
 	}
 
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
 		
-		final String mucJID = MessageProcessorUtils.getMuc(message);
-		final Properties props = perMucProps.get(mucJID);
-		final boolean enabled = "1".equals(props.getProperty("Gelbooru"));
-		final String botname = props.getProperty("nickname");
-		final Pattern COMMAND_PATTERN = Pattern.compile(
-			".*?" + botname + ".*?(?:(?:запости)|(?:доставь)).+?([\\w().*+]+|(?:няшку))[.!]?"
-		);
+		
 		
 		if (!enabled) {
 			return null;

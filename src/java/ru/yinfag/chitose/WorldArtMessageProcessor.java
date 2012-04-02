@@ -32,24 +32,20 @@ public class WorldArtMessageProcessor implements MessageProcessor {
 
 	private static final String META_REFRESH = "<meta http-equiv='Refresh' content='0;";
 	
-	private final Map<String, Properties> perMucProps;
+	private final boolean enabled;
 	
-	private Pattern COMMAND_PATTERN;
+	private final Pattern COMMAND_PATTERN;
 
-	WorldArtMessageProcessor(final Map<String, Properties> perMucProps) {
-		this.perMucProps = perMucProps;
+	WorldArtMessageProcessor(final Properties mucProps) {
+		enabled = "1".equals(mucProps.getProperty("urlExpandEnabled"));
+		String botname = mucProps.getProperty("nickname");
+		COMMAND_PATTERN = Pattern.compile(
+			".*?"+botname+".*?расскажи.*?про \"(.+?)\""
+		);
 	}
 	
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
-		
-		final String mucJID = MessageProcessorUtils.getMuc(message);
-		final Properties props = perMucProps.get(mucJID);
-		final boolean enabled = "1".equals(props.getProperty("urlExpandEnabled"));
-		String botname = props.getProperty("nickname");
-		COMMAND_PATTERN = Pattern.compile(
-			".*?"+botname+".*?расскажи.*?про \"(.+?)\""
-		);
 		
 		if (!enabled) {
 			return null;

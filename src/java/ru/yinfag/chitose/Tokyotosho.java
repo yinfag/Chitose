@@ -23,8 +23,8 @@ public class Tokyotosho extends TimerTask implements Runnable {
 	
 	private String lastTitle;
 	private List<MultiUserChat> mucs;
-	private Map<String, Properties> perMucProps;
 	private List<String> chatrooms;
+	private Map<String, Properties> perMucProps;
 	
 	Tokyotosho(final Map<String, Properties> perMucProps, final List<MultiUserChat> mucs) {
 		this.mucs = mucs;

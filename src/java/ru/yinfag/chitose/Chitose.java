@@ -44,26 +44,17 @@ public class Chitose {
 		}
 		
 		final Properties props = new Properties();
+		final Properties chatroomProps = new Properties();
 		
 		final Map<String, Properties> perMucProps = new HashMap<>();
-		for (final String chatroom : chatrooms) {
-			final Properties chatroomProps = new Properties();
-			try (final Reader reader = Files.newBufferedReader(
-				Paths.get(chatroom + ".cfg"),
-				Charset.forName("UTF-8")
-			)) {
-				chatroomProps.load(reader);
-			} catch (IOException | IllegalArgumentException e) {
-				try (final Reader reader = Files.newBufferedReader(
-					Paths.get("default_chatroom_config.cfg"),
-					Charset.forName("UTF-8")
-				)) {
-					chatroomProps.load(reader);
-				} catch (IOException | IllegalArgumentException e1) {
-					e1.printStackTrace();
-				}
-			}
-			perMucProps.put(chatroom, chatroomProps);
+		
+		try (final Reader reader = Files.newBufferedReader(
+			Paths.get("default_chatroom_config.cfg"),
+			Charset.forName("UTF-8")
+		)) {
+			chatroomProps.load(reader);
+		} catch (IOException | IllegalArgumentException e) {
+			e.printStackTrace();
 		}
 		
 		try (final Reader reader = Files.newBufferedReader(
@@ -103,12 +94,27 @@ public class Chitose {
 			// join all listed conferences
 			
 			final List<MultiUserChat> mucs = new ArrayList<>();
+			Properties mucProps;
 			for (final String chatroom : chatrooms) {
+				
+				mucProps = new Properties(chatroomProps);
+				
+				try (final Reader reader = Files.newBufferedReader(
+						Paths.get(chatroom + ".cfg"),
+						Charset.forName("UTF-8")
+				)) {
+					mucProps.load(reader);
+				} catch (IOException | IllegalArgumentException e) {
+					e.printStackTrace();
+				}
+				
+				perMucProps.put(chatroom, mucProps);
+				
 				final MultiUserChat muc = new MultiUserChat(conn, chatroom);
 				mucs.add(muc);
 				// add message and presence listeners
 				final ChitoseMUCListener listener =
-						new ChitoseMUCListener(muc, props, perMucProps);
+						new ChitoseMUCListener(muc, props, mucProps);
 				muc.addParticipantListener(listener.newProxyPacketListener());
 				muc.addMessageListener(listener.newProxyPacketListener());
 
@@ -118,7 +124,6 @@ public class Chitose {
 
 				// enter the chatroom
 				
-				final Properties mucProps = perMucProps.get(chatroom);
 				final String nickname = mucProps.getProperty("nickname");
 				
 				try {

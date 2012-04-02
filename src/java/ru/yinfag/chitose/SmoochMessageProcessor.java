@@ -10,20 +10,16 @@ import java.util.Properties;
  */
 public class SmoochMessageProcessor implements MessageProcessor {
 
-	private final Map<String, Properties> perMucProps;
+	private final boolean enabled;
 	
-	public SmoochMessageProcessor(final Map<String, Properties> perMucProps) {
-		this.perMucProps = perMucProps;
+	public SmoochMessageProcessor(final Properties mucProps) {
+		enabled = "1".equals(mucProps.getProperty("Smooch"));
 	}
 
 
 	
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
-		
-		final String mucJID = MessageProcessorUtils.getMuc(message);
-		final Properties props = perMucProps.get(mucJID);
-		final boolean enabled = "1".equals(props.getProperty("Smooch"));
 		
 		if (!enabled) {
 			return null;

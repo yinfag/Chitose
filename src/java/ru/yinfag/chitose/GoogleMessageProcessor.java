@@ -47,10 +47,11 @@ public class GoogleMessageProcessor implements MessageProcessor {
 	
 	private final String googleDomain;
 	
-	private final Map<String, Properties> perMucProps;
+	private final boolean enabled;
 	
-	public GoogleMessageProcessor(final Map<String, Properties> perMucProps, final Properties props) {
-		this.perMucProps = perMucProps;
+	public GoogleMessageProcessor(final Properties mucProps, final Properties props) {
+		
+		enabled = "1".equals(mucProps.getProperty("Gelbooru"));
 		httpUserAgent = props.getProperty("httpUserAgent");
 		httpAcceptLanguage = props.getProperty("httpAcceptLanguage");
 		googleDomain = props.getProperty("googleDomain");
@@ -58,10 +59,7 @@ public class GoogleMessageProcessor implements MessageProcessor {
 	
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
-		
-		final String mucJID = MessageProcessorUtils.getMuc(message);
-		final Properties mucProps = perMucProps.get(mucJID);
-		final boolean enabled = "1".equals(mucProps.getProperty("Gelbooru"));
+
 		
 		if (!enabled) {
 			return null;
