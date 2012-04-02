@@ -37,7 +37,7 @@ public class WorldArtMessageProcessor implements MessageProcessor {
 	private final Pattern COMMAND_PATTERN;
 
 	WorldArtMessageProcessor(final Properties mucProps) {
-		enabled = "1".equals(mucProps.getProperty("urlExpandEnabled"));
+		enabled = "1".equals(mucProps.getProperty("WorldArt"));
 		String botname = mucProps.getProperty("nickname");
 		COMMAND_PATTERN = Pattern.compile(
 			".*?"+botname+".*?расскажи.*?про \"(.+?)\""
