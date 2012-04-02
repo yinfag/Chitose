@@ -11,11 +11,9 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Properties;
-import java.util.HashMap;
-import java.util.Map;
 
 public class WorldArtMessageProcessor implements MessageProcessor {
 	
@@ -38,7 +36,7 @@ public class WorldArtMessageProcessor implements MessageProcessor {
 
 	WorldArtMessageProcessor(final Properties mucProps) {
 		enabled = "1".equals(mucProps.getProperty("WorldArt"));
-		String botname = mucProps.getProperty("nickname");
+		final String botname = mucProps.getProperty("nickname");
 		COMMAND_PATTERN = Pattern.compile(
 			".*?"+botname+".*?расскажи.*?про \"(.+?)\""
 		);
@@ -46,11 +44,10 @@ public class WorldArtMessageProcessor implements MessageProcessor {
 	
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
-		
 		if (!enabled) {
 			return null;
 		}
-		
+
 		final String title = getTitle(message.getBody());
 		if (title == null) {
 			return null;

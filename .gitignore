@@ -2,5 +2,4 @@
 target/
 out/
 *.iws
-chitose.cfg
-chatrooms.cfg
+*.cfg
