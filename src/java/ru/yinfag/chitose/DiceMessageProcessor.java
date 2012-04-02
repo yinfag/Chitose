@@ -15,7 +15,6 @@ import java.util.Map;
  * @author Yanus Poluektovich (ypoluektovich@gmail.com)
  */
 public class DiceMessageProcessor implements MessageProcessor {
-	
 
 	private final Map<String, Properties> perMucProps;
 	DiceMessageProcessor(final Map<String, Properties> perMucProps) {
@@ -29,8 +28,9 @@ public class DiceMessageProcessor implements MessageProcessor {
 		final Properties props = perMucProps.get(mucJID);
 		final boolean enabled = "1".equals(props.getProperty("Dice"));
 		final String botname = props.getProperty("nickname");
-		String regex = ".*?" + botname + ".*?кинь.*?(\\d+)[dд](\\d+)";
-		final Pattern COMMAND_PATTERN = Pattern.compile(regex);
+		final Pattern COMMAND_PATTERN = Pattern.compile(
+			".*?" + botname + ".*?кинь.*?(\\d+)[dд](\\d+)"
+		);
 		
 		if (!enabled) {
 			return null;

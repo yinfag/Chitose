@@ -31,8 +31,9 @@ public class TimerMessageProcessor implements MessageProcessor {
 		final Properties props = perMucProps.get(mucJID);
 		final boolean enabled = "1".equals(props.getProperty("Timer"));
 		String botname = props.getProperty("nickname");
-		String regex = ".*?" + botname + ".*?напомни.*?о \"(.+?)\" через ([1-9][0-9]*).*?(?:минут[ыу]?)";
-		final Pattern p = Pattern.compile(regex);
+		final Pattern p = Pattern.compile(
+			".*?" + botname + ".*?напомни.*?о \"(.+?)\" через ([1-9][0-9]*).*?(?:минут[ыу]?)"
+		);
 		
 		if (!enabled) {
 			return null;

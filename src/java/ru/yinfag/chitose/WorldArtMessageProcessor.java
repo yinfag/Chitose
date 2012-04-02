@@ -47,8 +47,9 @@ public class WorldArtMessageProcessor implements MessageProcessor {
 		final Properties props = perMucProps.get(mucJID);
 		final boolean enabled = "1".equals(props.getProperty("urlExpandEnabled"));
 		String botname = props.getProperty("nickname");
-		String regex = ".*?"+botname+".*?расскажи.*?про \"(.+?)\"";
-		COMMAND_PATTERN = Pattern.compile(regex);
+		COMMAND_PATTERN = Pattern.compile(
+			".*?"+botname+".*?расскажи.*?про \"(.+?)\""
+		);
 		
 		if (!enabled) {
 			return null;

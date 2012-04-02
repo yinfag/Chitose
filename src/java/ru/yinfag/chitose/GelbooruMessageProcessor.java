@@ -32,8 +32,9 @@ public class GelbooruMessageProcessor implements MessageProcessor {
 		final Properties props = perMucProps.get(mucJID);
 		final boolean enabled = "1".equals(props.getProperty("Gelbooru"));
 		final String botname = props.getProperty("nickname");
-		String regex = ".*?" + botname + ".*?(?:(?:запости)|(?:доставь)).+?([\\w().*+]+|(?:няшку))[.!]?";
-		final Pattern COMMAND_PATTERN = Pattern.compile(regex);
+		final Pattern COMMAND_PATTERN = Pattern.compile(
+			".*?" + botname + ".*?(?:(?:запости)|(?:доставь)).+?([\\w().*+]+|(?:няшку))[.!]?"
+		);
 		
 		if (!enabled) {
 			return null;

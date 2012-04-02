@@ -25,7 +25,9 @@ public class HelpMessageProcessor implements MessageProcessor {
 		final boolean enabled = "1".equals(props.getProperty("Help"));
 		String botname = props.getProperty("nickname");
 		String regex = ".*?" + botname + ".*?(?:[Хх]елп|[Hh]elp)";
-		final Pattern PATTERN = Pattern.compile(regex);
+		final Pattern PATTERN = Pattern.compile(
+			".*?" + botname + ".*?(?:[Хх]елп|[Hh]elp)"
+		);
 		final String HELP_MESSAGE =
 		"\nКидаем кубики: "+botname+", кинь 2d6" +
 				"\nПостим няшек: "+botname+" запости няшку" +
