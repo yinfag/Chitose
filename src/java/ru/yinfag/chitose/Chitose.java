@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.Timer;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Chitose's main class. Contains the application entry point.
@@ -29,18 +31,7 @@ public class Chitose {
 	 * @param args    command line arguments. Ignored.
 	 */
 	public static void main(final String[] args) {
-		// load Chitose's settings
-		final Properties props = new Properties();
-		try (final Reader reader = Files.newBufferedReader(
-				Paths.get("chitose.cfg"),
-				Charset.forName("UTF-8")
-		)) {
-			props.load(reader);
-		} catch (IOException | IllegalArgumentException e) {
-			log("Failed to load chitose.cfg", e);
-			return;
-		}
-
+		
 		final List<String> chatrooms;
 		try {
 			chatrooms = Files.readAllLines(
@@ -51,7 +42,40 @@ public class Chitose {
 			log("Failed to load chatroom list", e);
 			return;
 		}
-
+		
+		final Properties props = new Properties();
+		
+		final Map<String, Properties> perMucProps = new HashMap<>();
+		for (final String chatroom : chatrooms) {
+			final Properties chatroomProps = new Properties();
+			try (final Reader reader = Files.newBufferedReader(
+				Paths.get(chatroom + ".cfg"),
+				Charset.forName("UTF-8")
+			)) {
+				chatroomProps.load(reader);
+			} catch (IOException | IllegalArgumentException e) {
+				try (final Reader reader = Files.newBufferedReader(
+					Paths.get("default_chatroom_config.cfg"),
+					Charset.forName("UTF-8")
+				)) {
+					chatroomProps.load(reader);
+				} catch (IOException | IllegalArgumentException e1) {
+					e1.printStackTrace();
+				}
+			}
+			perMucProps.put(chatroom, chatroomProps);
+		}
+		
+		try (final Reader reader = Files.newBufferedReader(
+			Paths.get("chitose.cfg"),
+			Charset.forName("UTF-8")
+		)) {
+			props.load(reader);
+		} catch (IOException | IllegalArgumentException e) {
+			log("Failed to load chitose.cfg", e);
+			return;
+		}
+		
 		// get a connection object and connect
 		final XMPPConnection conn =
 				new XMPPConnection(props.getProperty("domain"));
@@ -76,8 +100,6 @@ public class Chitose {
 				return;
 			}
 
-			final String nickname = props.getProperty("nickname");
-
 			// join all listed conferences
 			
 			final List<MultiUserChat> mucs = new ArrayList<>();
@@ -86,7 +108,7 @@ public class Chitose {
 				mucs.add(muc);
 				// add message and presence listeners
 				final ChitoseMUCListener listener =
-						new ChitoseMUCListener(muc, props);
+						new ChitoseMUCListener(muc, props, perMucProps);
 				muc.addParticipantListener(listener.newProxyPacketListener());
 				muc.addMessageListener(listener.newProxyPacketListener());
 
@@ -95,6 +117,10 @@ public class Chitose {
 				history.setMaxStanzas(0);
 
 				// enter the chatroom
+				
+				final Properties mucProps = perMucProps.get(chatroom);
+				final String nickname = mucProps.getProperty("nickname");
+				
 				try {
 					muc.join(nickname, null, history, 5000);
 				} catch (XMPPException e) {
@@ -102,7 +128,7 @@ public class Chitose {
 				}
 			}
 
-			final Tokyotosho parser = new Tokyotosho(mucs);
+			final Tokyotosho parser = new Tokyotosho(perMucProps, mucs);
 			final long tokyotoshoUpdatePeriod = 60000 * Long.parseLong(
 					props.getProperty("tokyotosho.update.period", "10")
 			);

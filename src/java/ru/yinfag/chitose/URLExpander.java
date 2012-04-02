@@ -9,19 +9,25 @@ import java.net.URL;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.Map;
 
 public class URLExpander implements MessageProcessor {
 
 	private static final Pattern PATTERN = Pattern.compile("http://goo\\.gl/\\w+");
+	private final Map<String, Properties> perMucProps;
 
-	private final boolean enabled;
-
-	public URLExpander(final Properties props) {
-		enabled = "1".equals(props.getProperty("urlExpandEnabled"));
+	public URLExpander(final Map<String, Properties> perMucProps) {
+		this.perMucProps = perMucProps;
 	}
 
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
+		
+		final String mucJID = MessageProcessorUtils.getMuc(message);
+		final Properties props = perMucProps.get(mucJID);
+		final boolean enabled = "1".equals(props.getProperty("urlExpandEnabled"));
+		
 		if (!enabled) {
 			return null;
 		}

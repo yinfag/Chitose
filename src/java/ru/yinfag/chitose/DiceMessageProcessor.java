@@ -8,22 +8,33 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Yanus Poluektovich (ypoluektovich@gmail.com)
  */
 public class DiceMessageProcessor implements MessageProcessor {
 	
-	private final Pattern COMMAND_PATTERN;
-	
-	DiceMessageProcessor(final Properties props) {
-		String botname = props.getProperty("nickname");
-		String regex = ".*?" + botname + ".*?кинь.*?(\\d+)[dд](\\d+)";
-		COMMAND_PATTERN = Pattern.compile(regex);
+
+	private final Map<String, Properties> perMucProps;
+	DiceMessageProcessor(final Map<String, Properties> perMucProps) {
+		this.perMucProps = perMucProps;
 	}
 
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
+		
+		final String mucJID = MessageProcessorUtils.getMuc(message);
+		final Properties props = perMucProps.get(mucJID);
+		final boolean enabled = "1".equals(props.getProperty("Dice"));
+		final String botname = props.getProperty("nickname");
+		String regex = ".*?" + botname + ".*?кинь.*?(\\d+)[dд](\\d+)";
+		final Pattern COMMAND_PATTERN = Pattern.compile(regex);
+		
+		if (!enabled) {
+			return null;
+		}
 		
 		final Matcher m = COMMAND_PATTERN.matcher(message.getBody());
 		if (!m.matches()) {

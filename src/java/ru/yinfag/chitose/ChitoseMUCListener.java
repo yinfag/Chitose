@@ -29,27 +29,31 @@ class ChitoseMUCListener implements PacketListener {
 	private final String defaultNickname;
 	private final String jid;
 	private final AtomicMarkableReference<String> nick;
+	
+	private final Map<String, Properties> perMucProps;
 
-	ChitoseMUCListener(final MultiUserChat muc, final Properties props) {
+	ChitoseMUCListener(final MultiUserChat muc, final Properties props, final Map<String, Properties> perMucProps) {
+		this.perMucProps = perMucProps;
 		this.muc = muc;
-		conference = props.getProperty("conference");
-		defaultNickname = props.getProperty("nickname");
+		conference = muc.getRoom();
+		final Properties propsMuc = perMucProps.get(conference);
+		defaultNickname = propsMuc.getProperty("nickname");
 		nick = new AtomicMarkableReference<>(defaultNickname, false);
 		jid = props.getProperty("login") + "@" + props.getProperty("domain") + "/" + props.getProperty("resource");
 
-		populateMessageProcessors(props, muc);
+		populateMessageProcessors(perMucProps, props, muc);
 	}
 
-	private void populateMessageProcessors(final Properties props, final MultiUserChat muc) {
-		messageProcessors.add(new GoogleMessageProcessor(props));
-		messageProcessors.add(new SmoochMessageProcessor());
-		messageProcessors.add(new URLExpander(props));
-		messageProcessors.add(new GelbooruMessageProcessor(props));
-		messageProcessors.add(new DiceMessageProcessor(props));
-		messageProcessors.add(new JpgToMessageProcessor());
-		messageProcessors.add(new WorldArtMessageProcessor(props));
-		messageProcessors.add(new TimerMessageProcessor(props, muc));
-		messageProcessors.add(new HelpMessageProcessor(props));		
+	private void populateMessageProcessors(final Map<String, Properties> perMucProps, final Properties props, final MultiUserChat muc) {
+		messageProcessors.add(new GoogleMessageProcessor(perMucProps, props));
+		messageProcessors.add(new SmoochMessageProcessor(perMucProps));
+		messageProcessors.add(new URLExpander(perMucProps));
+		messageProcessors.add(new GelbooruMessageProcessor(perMucProps));
+		messageProcessors.add(new DiceMessageProcessor(perMucProps));
+		messageProcessors.add(new JpgToMessageProcessor(perMucProps));
+		messageProcessors.add(new WorldArtMessageProcessor(perMucProps));
+		messageProcessors.add(new TimerMessageProcessor(perMucProps, muc));
+		messageProcessors.add(new HelpMessageProcessor(perMucProps));		
 	}
 
 	public PacketListener newProxyPacketListener() {

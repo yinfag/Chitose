@@ -13,20 +13,32 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GelbooruMessageProcessor implements MessageProcessor {
 
 	private static final Pattern PICTURE_LIST_ENTRY_PATTERN = Pattern.compile("sample_url=\"(.+?)\"");
-	private final Pattern COMMAND_PATTERN;
-
-	GelbooruMessageProcessor(final Properties props) {
-		String botname = props.getProperty("nickname");
-		String regex = ".*?" + botname + ".*?(?:(?:запости)|(?:доставь)).+?([\\w().*+]+|(?:няшку))[.!]?";
-		COMMAND_PATTERN = Pattern.compile(regex);
+	private final Map<String, Properties> perMucProps;
+	
+	GelbooruMessageProcessor(final Map<String, Properties> perMucProps) {
+				this.perMucProps = perMucProps;
 	}
 
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
+		
+		final String mucJID = MessageProcessorUtils.getMuc(message);
+		final Properties props = perMucProps.get(mucJID);
+		final boolean enabled = "1".equals(props.getProperty("Gelbooru"));
+		final String botname = props.getProperty("nickname");
+		String regex = ".*?" + botname + ".*?(?:(?:запости)|(?:доставь)).+?([\\w().*+]+|(?:няшку))[.!]?";
+		final Pattern COMMAND_PATTERN = Pattern.compile(regex);
+		
+		if (!enabled) {
+			return null;
+		}
+		
 		final Matcher m = COMMAND_PATTERN.matcher(message.getBody());
 		if (!m.matches()) {
 			return null;

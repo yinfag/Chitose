@@ -15,14 +15,20 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimerTask;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 public class Tokyotosho extends TimerTask implements Runnable {
 	
 	private String lastTitle;
 	private List<MultiUserChat> mucs;
+	private Map<String, Properties> perMucProps;
+	private List<String> chatrooms;
 	
-	Tokyotosho(final List<MultiUserChat> mucs) {
+	Tokyotosho(final Map<String, Properties> perMucProps, final List<MultiUserChat> mucs) {
 		this.mucs = mucs;
+		this.perMucProps = perMucProps;
 	}
 	
 	@Override
@@ -57,13 +63,16 @@ public class Tokyotosho extends TimerTask implements Runnable {
 		if (!titles.isEmpty()) {
 			if (lastTitle != null) {
 				for (final MultiUserChat muc : mucs) {
-					try {
-						muc.sendMessage(
+					final Properties props = perMucProps.get(muc.getRoom());
+					if ("1".equals(props.getProperty("Tokyotosho"))) {
+						try {
+							muc.sendMessage(
 								"Ня, новые торренты на тотошке!\n" +
 										Utils.join(titles, "\n")
-						);
-					} catch (XMPPException e) {
-						e.printStackTrace();
+							);
+						} catch (XMPPException e) {
+							e.printStackTrace();
+						}	
 					}
 				}
 			}

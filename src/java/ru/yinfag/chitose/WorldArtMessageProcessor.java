@@ -14,10 +14,11 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 
 public class WorldArtMessageProcessor implements MessageProcessor {
 	
-	private final Pattern COMMAND_PATTERN;
 
 	private static final String MULTIPLE_TITLES_INDICATOR = "отсортировано по дате выхода";
 
@@ -31,14 +32,28 @@ public class WorldArtMessageProcessor implements MessageProcessor {
 
 	private static final String META_REFRESH = "<meta http-equiv='Refresh' content='0;";
 	
-	WorldArtMessageProcessor(final Properties props) {
-		String botname = props.getProperty("nickname");
-		String regex = ".*?"+botname+".*?расскажи.*?про \"(.+?)\"";
-		COMMAND_PATTERN = Pattern.compile(regex);
+	private final Map<String, Properties> perMucProps;
+	
+	private Pattern COMMAND_PATTERN;
+
+	WorldArtMessageProcessor(final Map<String, Properties> perMucProps) {
+		this.perMucProps = perMucProps;
 	}
 	
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
+		
+		final String mucJID = MessageProcessorUtils.getMuc(message);
+		final Properties props = perMucProps.get(mucJID);
+		final boolean enabled = "1".equals(props.getProperty("urlExpandEnabled"));
+		String botname = props.getProperty("nickname");
+		String regex = ".*?"+botname+".*?расскажи.*?про \"(.+?)\"";
+		COMMAND_PATTERN = Pattern.compile(regex);
+		
+		if (!enabled) {
+			return null;
+		}
+		
 		final String title = getTitle(message.getBody());
 		if (title == null) {
 			return null;

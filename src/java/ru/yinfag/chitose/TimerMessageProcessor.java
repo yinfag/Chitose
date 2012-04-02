@@ -15,19 +15,29 @@ import java.util.Properties;
 public class TimerMessageProcessor implements MessageProcessor {
 
 	private final MultiUserChat muc;
-	private final Pattern p;
+	private final Map<String, Properties> perMucProps;
 	
-	TimerMessageProcessor(final Properties props, final MultiUserChat muc) {
+	TimerMessageProcessor(final Map<String, Properties> perMucProps, final MultiUserChat muc) {
+		this.perMucProps = perMucProps;	
 		this.muc = muc;
-		String botname = props.getProperty("nickname");
-		String regex = ".*?" + botname + ".*?напомни.*?о \"(.+?)\" через ([1-9][0-9]*).*?(?:минут[ыу]?)";
-		p = Pattern.compile(regex);
 	}
 
 	private final Map<String, Timer> timers = new HashMap<>();
 	
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
+		
+		final String mucJID = MessageProcessorUtils.getMuc(message);
+		final Properties props = perMucProps.get(mucJID);
+		final boolean enabled = "1".equals(props.getProperty("Timer"));
+		String botname = props.getProperty("nickname");
+		String regex = ".*?" + botname + ".*?напомни.*?о \"(.+?)\" через ([1-9][0-9]*).*?(?:минут[ыу]?)";
+		final Pattern p = Pattern.compile(regex);
+		
+		if (!enabled) {
+			return null;
+		}
+		
 		final Matcher m = p.matcher(message.getBody());
 		
 		if (!m.matches()) {
