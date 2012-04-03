@@ -18,6 +18,10 @@ import java.util.TimerTask;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.sql.Statement;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.ResultSet;
 
 public class Tokyotosho extends TimerTask implements Runnable {
 	
@@ -25,14 +29,36 @@ public class Tokyotosho extends TimerTask implements Runnable {
 	private List<MultiUserChat> mucs;
 	private List<String> chatrooms;
 	private Map<String, Properties> perMucProps;
+	private Statement statement;
 	
-	Tokyotosho(final Map<String, Properties> perMucProps, final List<MultiUserChat> mucs) {
+	Tokyotosho (final Map<String, Properties> perMucProps, final List<MultiUserChat> mucs, final Connection dbconn) throws SQLException  {
 		this.mucs = mucs;
 		this.perMucProps = perMucProps;
+		statement = dbconn.createStatement();
+		try (final ResultSet rs = dbconn.getMetaData().getTables(null, null, "FILTER", null)) {
+			if (!rs.next()) {
+				statement.execute("create table filter (text varchar(512) not null)");
+			}
+		}
 	}
 	
 	@Override
 	public void run() {
+		
+
+		
+		final List<String> filters = new ArrayList<>();
+		try (final ResultSet rs = statement.executeQuery("select text from filter")) {
+
+			while (rs.next()) {
+				filters.add(rs.getString("text"));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			// еще что-нибудь
+			return;
+		}		
+		
 		final URL rss;
 		try {
 			rss = new URL("http://tokyotosho.info/rss.php?filter=1,7");
@@ -41,6 +67,7 @@ public class Tokyotosho extends TimerTask implements Runnable {
 			return;
 		}
 		final Document doc;
+
 		try {
 			final DocumentBuilderFactory factory =
 					DocumentBuilderFactory.newInstance();
@@ -50,6 +77,7 @@ public class Tokyotosho extends TimerTask implements Runnable {
 			e.printStackTrace();
 			return;
 		}
+
 		final NodeList nodelist = doc.getElementsByTagName("title");
 		final List<String> titles = new ArrayList<>();		
 		for (int i = 1; i < nodelist.getLength(); i++) {
@@ -58,10 +86,20 @@ public class Tokyotosho extends TimerTask implements Runnable {
 			if (title.equals(lastTitle)) {
 				break;
 			}
-			titles.add(title);
+			if (!filters.isEmpty()) {
+				for (final String filter : filters) {
+					if (title.contains(filter)) {
+						titles.add(title);	
+					}	
+				}
+			} else {
+				titles.add(title);
+			}
 		}
+		
 		if (!titles.isEmpty()) {
 			if (lastTitle != null) {
+
 				for (final MultiUserChat muc : mucs) {
 					final Properties props = perMucProps.get(muc.getRoom());
 					if ("1".equals(props.getProperty("Tokyotosho"))) {
@@ -76,6 +114,7 @@ public class Tokyotosho extends TimerTask implements Runnable {
 					}
 				}
 			}
+
 			lastTitle = titles.get(0);
 		}
 	}

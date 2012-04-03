@@ -17,6 +17,9 @@ import java.util.Scanner;
 import java.util.Timer;
 import java.util.HashMap;
 import java.util.Map;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
 /**
  * Chitose's main class. Contains the application entry point.
@@ -78,6 +81,26 @@ public class Chitose {
 		}
 
 		final Timer tokyotoshoTimer = new Timer();
+		
+		try {
+			Class.forName("org.hsqldb.jdbc.JDBCDriver" );
+		} catch (Exception e) {
+			log("Failed to load DB driver", e);
+			return;
+		}
+		
+		final Connection dbconn;	
+		try {
+			dbconn = DriverManager.getConnection(
+					"jdbc:hsqldb:file:" + props.getProperty("path.to.database"), 
+					"SA",
+					""
+			);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return;
+		}	
+		
 		try {
 			// attempt login
 			try {
@@ -95,6 +118,7 @@ public class Chitose {
 			
 			final List<MultiUserChat> mucs = new ArrayList<>();
 			Properties mucProps;
+		
 			for (final String chatroom : chatrooms) {
 				
 				mucProps = new Properties(chatroomProps);
@@ -132,18 +156,28 @@ public class Chitose {
 					log("Failed to join the chat room", e);
 				}
 			}
-
-			final Tokyotosho parser = new Tokyotosho(perMucProps, mucs);
-			final long tokyotoshoUpdatePeriod = 60000 * Long.parseLong(
+			
+			try {
+				final Tokyotosho parser = new Tokyotosho(perMucProps, mucs, dbconn);
+				final long tokyotoshoUpdatePeriod = 60000 * Long.parseLong(
 					props.getProperty("tokyotosho.update.period", "10")
-			);
-			tokyotoshoTimer.schedule(parser, 30000, tokyotoshoUpdatePeriod);
+				);
+				tokyotoshoTimer.schedule(parser, 30000, tokyotoshoUpdatePeriod);
+			} catch (SQLException e) {
+				log("Failed to initialize Tokyotosho monitor", e);
+			}
 
 			waitForExitCommand();
 		} finally {
 			tokyotoshoTimer.cancel();
 			// disconnect from server
 			conn.disconnect();
+			try {
+				dbconn.close();
+				dbconn.createStatement().execute("shutdown");
+			} catch (SQLException e) {
+				log("Error while closing DB connection", e);
+			}
 		}
 	}
 
