@@ -80,8 +80,6 @@ public class Chitose {
 			return;
 		}
 
-		final Timer tokyotoshoTimer = new Timer();
-		
 		try {
 			Class.forName("org.hsqldb.jdbc.JDBCDriver" );
 		} catch (Exception e) {
@@ -101,6 +99,8 @@ public class Chitose {
 			return;
 		}	
 		
+		final Timer tokyotoshoTimer = new Timer();
+
 		try {
 			// attempt login
 			try {
@@ -173,8 +173,8 @@ public class Chitose {
 			// disconnect from server
 			conn.disconnect();
 			try {
-				dbconn.close();
 				dbconn.createStatement().execute("shutdown");
+				dbconn.close();
 			} catch (SQLException e) {
 				log("Error while closing DB connection", e);
 			}

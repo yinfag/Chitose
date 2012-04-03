@@ -12,26 +12,28 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TimerTask;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.sql.Statement;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.ResultSet;
+import java.util.TimerTask;
 
 public class Tokyotosho extends TimerTask implements Runnable {
 	
 	private String lastTitle;
 	private List<MultiUserChat> mucs;
-	private List<String> chatrooms;
 	private Map<String, Properties> perMucProps;
 	private Statement statement;
 	
-	Tokyotosho (final Map<String, Properties> perMucProps, final List<MultiUserChat> mucs, final Connection dbconn) throws SQLException  {
+	Tokyotosho(
+			final Map<String, Properties> perMucProps,
+			final List<MultiUserChat> mucs,
+			final Connection dbconn
+	) throws SQLException  {
 		this.mucs = mucs;
 		this.perMucProps = perMucProps;
 		statement = dbconn.createStatement();
@@ -44,20 +46,17 @@ public class Tokyotosho extends TimerTask implements Runnable {
 	
 	@Override
 	public void run() {
-		
-
-		
 		final List<String> filters = new ArrayList<>();
+		System.out.println("Trying to query for Tokyotosho filters...");
 		try (final ResultSet rs = statement.executeQuery("select text from filter")) {
-
 			while (rs.next()) {
 				filters.add(rs.getString("text"));
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
-			// еще что-нибудь
 			return;
-		}		
+		}
+		System.out.printf("Got %d filters%n", filters.size());
 		
 		final URL rss;
 		try {
@@ -66,8 +65,8 @@ public class Tokyotosho extends TimerTask implements Runnable {
 			e.printStackTrace();
 			return;
 		}
-		final Document doc;
 
+		final Document doc;
 		try {
 			final DocumentBuilderFactory factory =
 					DocumentBuilderFactory.newInstance();
@@ -83,23 +82,27 @@ public class Tokyotosho extends TimerTask implements Runnable {
 		for (int i = 1; i < nodelist.getLength(); i++) {
 			final Element element = (Element) nodelist.item(i);
 			final String title = element.getTextContent();
+			System.out.printf("Checking RSS title %d: %s%n", i, title);
 			if (title.equals(lastTitle)) {
+				System.out.println("Equals last title");
 				break;
 			}
-			if (!filters.isEmpty()) {
+			if (filters.isEmpty()) {
+				titles.add(title);
+			} else {
+				System.out.println("Filtering...");
 				for (final String filter : filters) {
 					if (title.contains(filter)) {
-						titles.add(title);	
-					}	
+						System.out.println("Matched filter: " + filter);
+						titles.add(title);
+						break;
+					}
 				}
-			} else {
-				titles.add(title);
 			}
 		}
 		
 		if (!titles.isEmpty()) {
 			if (lastTitle != null) {
-
 				for (final MultiUserChat muc : mucs) {
 					final Properties props = perMucProps.get(muc.getRoom());
 					if ("1".equals(props.getProperty("Tokyotosho"))) {
@@ -114,7 +117,6 @@ public class Tokyotosho extends TimerTask implements Runnable {
 					}
 				}
 			}
-
 			lastTitle = titles.get(0);
 		}
 	}

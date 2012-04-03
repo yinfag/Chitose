@@ -346,7 +346,14 @@
   </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
   <component name="libraryTable">
-    <library name="lib">
+    <library name="hsqldb">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/lib/hsqldb.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="smack">
       <CLASSES>
         <root url="jar://$PROJECT_DIR$/lib/smack.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/smackx.jar!/" />
