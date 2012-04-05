@@ -8,7 +8,7 @@ import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.MUCUser;
-
+import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 
@@ -32,7 +32,7 @@ class ChitoseMUCListener implements PacketListener {
 	
 	private final Properties mucProps;
 
-	ChitoseMUCListener(final MultiUserChat muc, final Properties props, final Properties mucProps) {
+	ChitoseMUCListener(final MultiUserChat muc, final Properties props, final Properties mucProps, final Connection dbconn) {
 		this.mucProps = mucProps;
 		this.muc = muc;
 		conference = muc.getRoom();
@@ -40,10 +40,10 @@ class ChitoseMUCListener implements PacketListener {
 		nick = new AtomicMarkableReference<>(defaultNickname, false);
 		jid = props.getProperty("login") + "@" + props.getProperty("domain") + "/" + props.getProperty("resource");
 
-		populateMessageProcessors(mucProps, props, muc);
+		populateMessageProcessors(mucProps, props, muc, dbconn);
 	}
 
-	private void populateMessageProcessors(final Properties mucProps, final Properties props, final MultiUserChat muc) {
+	private void populateMessageProcessors(final Properties mucProps, final Properties props, final MultiUserChat muc, final Connection dbconn) {
 		messageProcessors.add(new GoogleMessageProcessor(mucProps, props));
 		messageProcessors.add(new SmoochMessageProcessor(mucProps));
 		messageProcessors.add(new URLExpander(mucProps));
@@ -52,7 +52,8 @@ class ChitoseMUCListener implements PacketListener {
 		messageProcessors.add(new JpgToMessageProcessor(mucProps));
 		messageProcessors.add(new WorldArtMessageProcessor(mucProps));
 		messageProcessors.add(new TimerMessageProcessor(mucProps, muc));
-		messageProcessors.add(new HelpMessageProcessor(mucProps));		
+		messageProcessors.add(new HelpMessageProcessor(mucProps));
+		messageProcessors.add(new TokyotoshoMessageProcessor(mucProps, dbconn));
 	}
 
 	public PacketListener newProxyPacketListener() {

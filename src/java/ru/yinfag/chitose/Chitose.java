@@ -138,7 +138,7 @@ public class Chitose {
 				mucs.add(muc);
 				// add message and presence listeners
 				final ChitoseMUCListener listener =
-						new ChitoseMUCListener(muc, props, mucProps);
+						new ChitoseMUCListener(muc, props, mucProps, dbconn);
 				muc.addParticipantListener(listener.newProxyPacketListener());
 				muc.addMessageListener(listener.newProxyPacketListener());
 
