@@ -10,16 +10,16 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.Scanner;
-import java.util.Timer;
-import java.util.HashMap;
-import java.util.Map;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Timer;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Chitose's main class. Contains the application entry point.
@@ -167,7 +167,8 @@ public class Chitose {
 				log("Failed to initialize Tokyotosho monitor", e);
 			}
 
-			waitForExitCommand();
+			waitForInterrupt();
+			log("Shutting down gracefully...");
 		} finally {
 			tokyotoshoTimer.cancel();
 			// disconnect from server
@@ -184,13 +185,19 @@ public class Chitose {
 	/**
 	 * This method waits for the user to input the exit command from console.
 	 */
-	private static void waitForExitCommand() {
-		final Scanner sc = new Scanner(System.in, "UTF-8");
-		sc.useDelimiter("\\n");
-		while (sc.hasNext()) {
-			final String command = sc.next();
-			if ("exit".equals(command)) {
-				return;
+	private static void waitForInterrupt() {
+		final CountDownLatch latch = new CountDownLatch(1);
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				latch.countDown();
+			}
+		});
+		while (true) {
+			try {
+				latch.await();
+				break;
+			} catch (InterruptedException ignore) {
 			}
 		}
 	}
@@ -207,6 +214,10 @@ public class Chitose {
 		if (e != null) {
 			e.printStackTrace();
 		}
+	}
+
+	private static void log(final String message) {
+		log(message, null);
 	}
 
 }
