@@ -23,13 +23,13 @@ public class TokyotoshoMessageProcessor implements MessageProcessor {
 		enabled = "1".equals(mucProps.getProperty("Tokyotosho"));
 		String botname = mucProps.getProperty("nickname");
 		p1 = Pattern.compile(
-			".*?" + botname + ". следи за релизами (.+?)"
+			".*?" + botname + ".* следи за релизами (.+?)"
 		);
 		p2 = Pattern.compile(
-			".*?" + botname + ". не следи за релизами (.+?)"
+			".*?" + botname + ".* не следи за релизами (.+?)"
 		);
 		p3 = Pattern.compile(
-			".*?" + botname + ". покажи фильтры"
+			".*?" + botname + ".* покажи фильтры"
 		);
 		try {
 			statement = dbconn.createStatement();
@@ -51,22 +51,38 @@ public class TokyotoshoMessageProcessor implements MessageProcessor {
 
 		if (m1.matches()){	
 			final String text = m1.group(1);
-			text.replaceAll("'", "''");
-			try {
-				statement.execute("insert into filter (text) values ('" + text + "')");
+			if (text.length() < 11) {	
+				text.replaceAll("'", "''");
+				try {
+					statement.execute("insert into filter (text) values ('" + text.trim() + "')");
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+				return "Добавила фильтр "+text.trim()+" , ня!";
+			} else {
+				return "Слишком длинный фильтр.";
+			}			
+		} else if (m2.matches()){		
+			final List<String> filters = new ArrayList<>();
+			try (final ResultSet rs = statement.executeQuery("select text from filter")) {
+				while (rs.next()) {
+					filters.add(rs.getString("text"));
+				}
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
-			return "Добавила фильтр "+text+" , ня!";
-		} else if (m2.matches()){
 			final String text = m2.group(1);
 			text.replaceAll("'", "''");
-			try {
-				statement.execute("DELETE FROM filter WHERE text='" + text + "'");
-			} catch (SQLException e) {
-				e.printStackTrace();
+			if (filters.contains(text)) {
+				try {
+					statement.execute("DELETE FROM filter WHERE text='" + text.trim() + "'");
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+				return "Фильтр " +text.trim()+ " удолён, ня!";
+			} else {
+				return "Нет такого фильтра же!";
 			}
-			return "Фильтр " +text+ " удолён, ня!";
 		} else if (m3.matches()) {
 			final List<String> filters = new ArrayList<>();
 			try (final ResultSet rs = statement.executeQuery("select text from filter")) {
