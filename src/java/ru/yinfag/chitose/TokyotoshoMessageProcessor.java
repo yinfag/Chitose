@@ -69,6 +69,7 @@ public class TokyotoshoMessageProcessor implements MessageProcessor {
 				}
 			} catch (SQLException e) {
 				e.printStackTrace();
+				return "Бд сломалась. т____т ";
 			}
 			final String text = m2.group(1).replaceAll("'", "''").trim();
 			if (filters.contains(text)) {
