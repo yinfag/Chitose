@@ -14,7 +14,7 @@ import javax.mail.Message.RecipientType;
 public class MailMessageProcessor implements MessageProcessor {
 	
 	private final boolean enabled;
-	private final Pattern p1;
+	private final Pattern pattern;
 	private final String host;
 	private final String user;
 	private final String password;
@@ -24,8 +24,8 @@ public class MailMessageProcessor implements MessageProcessor {
 		user = props.getProperty("mail.user");
 		password = props.getProperty("mail.password");
 		enabled = "1".equals(mucProps.getProperty("Mail"));
-		String botname = mucProps.getProperty("nickname");
-		p1 = Pattern.compile(
+		final String botname = mucProps.getProperty("nickname");
+		pattern = Pattern.compile(
 			".*?" + botname + ".* отправь сообщение \"(.+?)\" на ([-a-z0-9!#$%&'*+/=?^_`{|}~]+(?:\\.[-a-z0-9!#$%&'*+/=?^_`{|}~]+)*@(?:[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?\\.)*(?:aero|arpa|asia|biz|cat|com|coop|edu|gov|info|int|jobs|mil|mobi|museum|name|net|org|pro|tel|travel|[a-z][a-z]))"
 		);
 	}
@@ -37,13 +37,13 @@ public class MailMessageProcessor implements MessageProcessor {
 			return null;
 		}
 		
-		final Matcher m1 = p1.matcher(message.getBody());		
-		if (m1.matches()){
+		final Matcher matcher = pattern.matcher(message.getBody());		
+		if (matcher.matches()){
 			
 			final String userNick = MessageProcessorUtils.getUserNick(message);
 			final String thisMuc = MessageProcessorUtils.getMuc(message);
 			
-			Properties mailProps = new Properties();
+			final Properties mailProps = new Properties();
 			
 			mailProps.put("mail.smtp.host", host);
 			mailProps.put("mail.smtp.user", user);
@@ -51,25 +51,25 @@ public class MailMessageProcessor implements MessageProcessor {
 			mailProps.put("mail.smtp.starttls.enable", "true");
 			
 			try {
-				Session session = Session.getInstance(mailProps);
+				final Session session = Session.getInstance(mailProps);
 				
-				MimeMessage msg = new MimeMessage(session);
-				msg.setText(m1.group(1));
+				final MimeMessage msg = new MimeMessage(session);
+				msg.setText(matcher.group(1));
 				msg.setSubject("Срочное сообщение от "+userNick+" из "+thisMuc);
 				msg.setFrom(new InternetAddress(user));
-				msg.addRecipient(RecipientType.TO, new InternetAddress(m1.group(2)));
+				msg.addRecipient(RecipientType.TO, new InternetAddress(matcher.group(2)));
 				msg.saveChanges();			
 				
-				Transport transport = session.getTransport("smtp");
+				final Transport transport = session.getTransport("smtp");
 				transport.connect(host, user, password);
 				transport.sendMessage(msg, msg.getAllRecipients());
 				transport.close();
 
-				return userNick+" :Отправила!";
+				return userNick+": Отправила!";
 				
 			} catch (MessagingException e) {
 				e.printStackTrace();
-				return userNick+" :Не смогла отправить. т___т";
+				return userNick+": Не смогла отправить. т___т";
 			}
 		} else {
 			return null;
