@@ -54,6 +54,7 @@ class ChitoseMUCListener implements PacketListener {
 		messageProcessors.add(new WorldArtMessageProcessor(mucProps));
 		messageProcessors.add(new TimerMessageProcessor(mucProps, muc));
 		messageProcessors.add(new HelpMessageProcessor(mucProps));
+		messageProcessors.add(new MailMessageProcessor(mucProps, props));
 		try {
 			messageProcessors.add(new TokyotoshoMessageProcessor(mucProps, dbconn));
 		} catch (SQLException e) {
