@@ -11,6 +11,7 @@ import org.jivesoftware.smackx.packet.MUCUser;
 import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicMarkableReference;
+import java.sql.SQLException;
 
 class ChitoseMUCListener implements PacketListener {
 
@@ -53,7 +54,11 @@ class ChitoseMUCListener implements PacketListener {
 		messageProcessors.add(new WorldArtMessageProcessor(mucProps));
 		messageProcessors.add(new TimerMessageProcessor(mucProps, muc));
 		messageProcessors.add(new HelpMessageProcessor(mucProps));
-		messageProcessors.add(new TokyotoshoMessageProcessor(mucProps, dbconn));
+		try {
+			messageProcessors.add(new TokyotoshoMessageProcessor(mucProps, dbconn));
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public PacketListener newProxyPacketListener() {

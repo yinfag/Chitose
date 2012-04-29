@@ -27,7 +27,7 @@ public class Tokyotosho extends TimerTask implements Runnable {
 	private String lastTitle;
 	private List<MultiUserChat> mucs;
 	private Map<String, Properties> perMucProps;
-	private Statement statement;
+	private final Statement statement;
 	
 	Tokyotosho(
 			final Map<String, Properties> perMucProps,

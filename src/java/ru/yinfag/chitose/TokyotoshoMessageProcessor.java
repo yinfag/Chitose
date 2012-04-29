@@ -17,25 +17,24 @@ public class TokyotoshoMessageProcessor implements MessageProcessor {
 	private final Pattern p1;
 	private final Pattern p2;
 	private final Pattern p3;
-	private Statement statement;
+	private final Statement statement;
 	
-	TokyotoshoMessageProcessor (final Properties mucProps, final Connection dbconn) {
+	TokyotoshoMessageProcessor (
+			final Properties mucProps, 
+			final Connection dbconn
+	) throws SQLException {
 		enabled = "1".equals(mucProps.getProperty("Tokyotosho"));
 		String botname = mucProps.getProperty("nickname");
 		p1 = Pattern.compile(
 			".*?" + botname + ".* следи за релизами (.+?)"
 		);
 		p2 = Pattern.compile(
-			".*?" + botname + ".* не следи за релизами (.+?)"
+			".*?" + botname + ".* удали фильтр (.+?)"
 		);
 		p3 = Pattern.compile(
 			".*?" + botname + ".* покажи фильтры"
 		);
-		try {
-			statement = dbconn.createStatement();
-		} catch (SQLException e){
-			e.printStackTrace();
-		}			
+		statement = dbconn.createStatement();	
 	}
 	
 	@Override
@@ -50,15 +49,17 @@ public class TokyotoshoMessageProcessor implements MessageProcessor {
 		final Matcher m3 = p3.matcher(message.getBody());
 
 		if (m1.matches()){	
-			final String text = m1.group(1);
+			final String text1 = m1.group(1);
+			final String text = text1.replaceAll("'", "''").trim();
 			if (text.length() < 11) {	
 				text.replaceAll("'", "''");
 				try {
-					statement.execute("insert into filter (text) values ('" + text.trim() + "')");
+					statement.execute("insert into filter (text) values ('" + text + "')");
+					return "Добавила фильтр "+text+" , ня!";
 				} catch (SQLException e) {
 					e.printStackTrace();
+					return "Не смогла добавить фильтр. т___т";
 				}
-				return "Добавила фильтр "+text.trim()+" , ня!";
 			} else {
 				return "Слишком длинный фильтр.";
 			}			
@@ -71,15 +72,17 @@ public class TokyotoshoMessageProcessor implements MessageProcessor {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
-			final String text = m2.group(1);
+			final String text1 = m2.group(1);
+			final String text = text1.replaceAll("'", "''").trim();
 			text.replaceAll("'", "''");
 			if (filters.contains(text)) {
 				try {
-					statement.execute("DELETE FROM filter WHERE text='" + text.trim() + "'");
+					statement.execute("DELETE FROM filter WHERE text='" + text + "'");
+					return "Фильтр " +text+ " удалён, ня!";
 				} catch (SQLException e) {
 					e.printStackTrace();
+					return "Не смогла удалить фильтр. т___т";
 				}
-				return "Фильтр " +text.trim()+ " удолён, ня!";
 			} else {
 				return "Нет такого фильтра же!";
 			}
@@ -91,6 +94,7 @@ public class TokyotoshoMessageProcessor implements MessageProcessor {
 				}
 			} catch (SQLException e) {
 				e.printStackTrace();
+				return "Не смогла получить список фильтров. т___т";
 			}
 			if (filters.isEmpty()) {
 				return "Фильтров нет.";
