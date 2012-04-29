@@ -15,10 +15,14 @@ public class MailMessageProcessor implements MessageProcessor {
 	
 	private final boolean enabled;
 	private final Pattern p1;
-	private final Properties props;
+	private final String host;
+	private final String user;
+	private final String password;
 	
 	MailMessageProcessor (final Properties mucProps, final Properties props) {
-		this.props = props;
+		host = props.getProperty("mail.host");
+		user = props.getProperty("mail.user");
+		password = props.getProperty("mail.password");
 		enabled = "1".equals(mucProps.getProperty("Mail"));
 		String botname = mucProps.getProperty("nickname");
 		p1 = Pattern.compile(
@@ -41,8 +45,8 @@ public class MailMessageProcessor implements MessageProcessor {
 			
 			Properties mailProps = new Properties();
 			
-			mailProps.put("mail.smtp.host", props.getProperty("mail.host"));
-			mailProps.put("mail.smtp.user", props.getProperty("mail.user"));
+			mailProps.put("mail.smtp.host", host);
+			mailProps.put("mail.smtp.user", user);
 			mailProps.put("mail.smtp.auth", "true");
 			mailProps.put("mail.smtp.starttls.enable", "true");
 			
@@ -52,12 +56,12 @@ public class MailMessageProcessor implements MessageProcessor {
 				MimeMessage msg = new MimeMessage(session);
 				msg.setText(m1.group(1));
 				msg.setSubject("Срочное сообщение от "+userNick+" из "+thisMuc);
-				msg.setFrom(new InternetAddress(props.getProperty("mail.user")));
+				msg.setFrom(new InternetAddress(user));
 				msg.addRecipient(RecipientType.TO, new InternetAddress(m1.group(2)));
 				msg.saveChanges();			
 				
 				Transport transport = session.getTransport("smtp");
-				transport.connect(props.getProperty("mail.host"), props.getProperty("mail.user"), props.getProperty("mail.password"));
+				transport.connect(host, user, password);
 				transport.sendMessage(msg, msg.getAllRecipients());
 				transport.close();
 
