@@ -49,10 +49,8 @@ public class TokyotoshoMessageProcessor implements MessageProcessor {
 		final Matcher m3 = p3.matcher(message.getBody());
 
 		if (m1.matches()){	
-			final String text1 = m1.group(1);
-			final String text = text1.replaceAll("'", "''").trim();
+			final String text = m1.group(1).replaceAll("'", "''").trim();
 			if (text.length() < 11) {	
-				text.replaceAll("'", "''");
 				try {
 					statement.execute("insert into filter (text) values ('" + text + "')");
 					return "Добавила фильтр "+text+" , ня!";
@@ -72,9 +70,7 @@ public class TokyotoshoMessageProcessor implements MessageProcessor {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
-			final String text1 = m2.group(1);
-			final String text = text1.replaceAll("'", "''").trim();
-			text.replaceAll("'", "''");
+			final String text = m2.group(1).replaceAll("'", "''").trim();
 			if (filters.contains(text)) {
 				try {
 					statement.execute("DELETE FROM filter WHERE text='" + text + "'");
