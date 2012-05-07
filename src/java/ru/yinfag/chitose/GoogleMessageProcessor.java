@@ -1,18 +1,17 @@
 package ru.yinfag.chitose;
 
 import org.jivesoftware.smack.packet.Message;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.util.Properties;
+import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.net.URL;
-import java.net.MalformedURLException;
-import java.net.URLEncoder;
-import java.net.URLDecoder;
-import java.net.URLConnection;
-import java.util.Scanner;
-import java.io.IOException;
-import java.util.Properties;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Google Message Processor for Chitose
@@ -50,8 +49,7 @@ public class GoogleMessageProcessor implements MessageProcessor {
 	private final boolean enabled;
 	
 	public GoogleMessageProcessor(final Properties mucProps, final Properties props) {
-		
-		enabled = "1".equals(mucProps.getProperty("Gelbooru"));
+		enabled = "1".equals(mucProps.getProperty("Google"));
 		httpUserAgent = props.getProperty("httpUserAgent");
 		httpAcceptLanguage = props.getProperty("httpAcceptLanguage");
 		googleDomain = props.getProperty("googleDomain");
@@ -59,8 +57,6 @@ public class GoogleMessageProcessor implements MessageProcessor {
 	
 	@Override
 	public CharSequence process(final Message message) throws MessageProcessingException {
-
-		
 		if (!enabled) {
 			return null;
 		}
