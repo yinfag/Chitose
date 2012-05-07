@@ -9,8 +9,6 @@ import java.net.URL;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.HashMap;
-import java.util.Map;
 
 public class URLExpander implements MessageProcessor {
 
@@ -18,7 +16,7 @@ public class URLExpander implements MessageProcessor {
 	private final boolean enabled;
 
 	public URLExpander(final Properties mucProps) {
-		enabled = "1".equals(mucProps.getProperty("urlExpandEnabled"));
+		enabled = "1".equals(mucProps.getProperty("UrlExpander"));
 	}
 
 	@Override
