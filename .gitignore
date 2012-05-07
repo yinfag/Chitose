@@ -3,4 +3,4 @@ target/
 out/
 *.iws
 *.cfg
-!/doc
+!/doc/example.conf.d/*.cfg
