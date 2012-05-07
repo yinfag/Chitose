@@ -1,0 +1,9 @@
+Chitose is a Jabber (XMPP) bot. Please treat her well.
+
+To build Chitose, you'll need JDK 1.7 and Apache Ant (we use 1.8.*).
+
+You can find example configuration files in doc/example.conf.d/. Copy them to
+Chitose's working directory, edit and run. Conference-specific configuration
+should be put into <conference>.cfg files that have the same syntax as
+default_chatroom_config.cfg; that is, for chatroom@conference.example.com,
+the file must be named chatroom@conference.example.com.cfg.
