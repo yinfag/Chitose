@@ -361,6 +361,13 @@
       <JAVADOC />
       <SOURCES />
     </library>
+    <library name="mail">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/lib/mail.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
     <library name="smack">
       <CLASSES>
         <root url="jar://$PROJECT_DIR$/lib/smack.jar!/" />
