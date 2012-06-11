@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.concurrent.CountDownLatch;
+import java.util.ServiceLoader;
 
 /**
  * Chitose's main class. Contains the application entry point.
@@ -34,6 +35,12 @@ public class Chitose {
 	 * @param args    command line arguments. Ignored.
 	 */
 	public static void main(final String[] args) {
+		
+		final ServiceLoader<Plugin> pluginLoader = ServiceLoader.load(Plugin.class);
+		for (final Plugin plugin : pluginLoader) {
+				System.out.println(plugin.getClass().getName());
+		}
+		
 		
 		final List<String> chatrooms;
 		try {
