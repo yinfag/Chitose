@@ -1,0 +1,1 @@
+ru.yinfag.chitose.plugin.smooch.SmoochPlugin
