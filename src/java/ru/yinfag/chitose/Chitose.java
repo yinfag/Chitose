@@ -38,10 +38,9 @@ public class Chitose {
 		
 		final ServiceLoader<Plugin> pluginLoader = ServiceLoader.load(Plugin.class);
 		for (final Plugin plugin : pluginLoader) {
-				System.out.println(plugin.getClass().getName());
+			System.out.println(plugin.getClass().getName());
 		}
-		
-		
+
 		final List<String> chatrooms;
 		try {
 			chatrooms = Files.readAllLines(

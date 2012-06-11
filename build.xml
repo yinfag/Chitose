@@ -33,19 +33,24 @@
 
 	<target name="prepare-dist-dir" depends="clean">
 		<mkdir dir="target/dist"/>
-		<mkdir dir="target/dist/libs-exploded"/>
+
+        <mkdir dir="target/dist/libs-exploded"/>
 		<unjar dest="target/dist/libs-exploded">
 			<patternset>
 				<exclude name="META-INF/MANIFEST.MF"/>
 			</patternset>
 			<fileset refid="libs"/>
 		</unjar>
+
+        <mkdir dir="target/dist/META-INF/services"/>
+        <copy file="src/plugins.txt" tofile="target/dist/META-INF/services/ru.yinfag.chitose.Plugin"/>
 	</target>
 
     <target name="dist" depends="build, prepare-dist-dir">
 		<jar destfile="target/dist/chitose.jar" manifest="src/manifest.txt">
 			<fileset dir="target/classes" includes="**"/>
 			<fileset dir="target/dist/libs-exploded" includes="**"/>
+            <fileset dir="target/dist" includes="META-INF/**"/>
 		</jar>
     </target>
 
