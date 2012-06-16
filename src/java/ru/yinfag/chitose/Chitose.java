@@ -37,6 +37,7 @@ public class Chitose {
 	public static void main(final String[] args) {
 		
 		final ServiceLoader<Plugin> pluginLoader = ServiceLoader.load(Plugin.class);
+		final List<Plugin> plugins = new ArrayList<>();
 		for (final Plugin plugin : pluginLoader) {
 			log("Loading plugin: " + plugin.getClass().getName());
 			if (plugin instanceof MessageSenderPlugin) {
@@ -48,6 +49,7 @@ public class Chitose {
 				});
 			}
 			plugin.init();
+			plugins.add(plugin);
 		}
 
 		final List<String> chatrooms;
@@ -185,6 +187,9 @@ public class Chitose {
 			waitForInterrupt();
 			log("Shutting down gracefully...");
 		} finally {
+			for (final Plugin plugin : plugins) {
+				plugin.shutdown();
+			}
 			tokyotoshoTimer.cancel();
 			// disconnect from server
 			conn.disconnect();
