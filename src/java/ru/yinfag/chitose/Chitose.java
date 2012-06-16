@@ -38,7 +38,16 @@ public class Chitose {
 		
 		final ServiceLoader<Plugin> pluginLoader = ServiceLoader.load(Plugin.class);
 		for (final Plugin plugin : pluginLoader) {
-			System.out.println(plugin.getClass().getName());
+			log("Loading plugin: " + plugin.getClass().getName());
+			if (plugin instanceof MessageSenderPlugin) {
+				((MessageSenderPlugin) plugin).setMessageSender(new MessageSender() {
+					@Override
+					public void sendToConference(final String conference, final String message) {
+						log("Attempted to send message '" + message + "' to " + conference);
+					}
+				});
+			}
+			plugin.init();
 		}
 
 		final List<String> chatrooms;
