@@ -35,11 +35,14 @@ public class Chitose {
 	 * @param args    command line arguments. Ignored.
 	 */
 	public static void main(final String[] args) {
-		
 		final ServiceLoader<Plugin> pluginLoader = ServiceLoader.load(Plugin.class);
 		final List<Plugin> plugins = new ArrayList<>();
+		final List<MessageProcessorPlugin> messageProcessors = new ArrayList<>();
 		for (final Plugin plugin : pluginLoader) {
 			log("Loading plugin: " + plugin.getClass().getName());
+			if (plugin instanceof MessageProcessorPlugin) {
+				messageProcessors.add((MessageProcessorPlugin) plugin);
+			}
 			if (plugin instanceof MessageSenderPlugin) {
 				((MessageSenderPlugin) plugin).setMessageSender(new MessageSender() {
 					@Override
@@ -155,7 +158,7 @@ public class Chitose {
 				mucs.add(muc);
 				// add message and presence listeners
 				final ChitoseMUCListener listener =
-						new ChitoseMUCListener(muc, props, mucProps, dbconn);
+						new ChitoseMUCListener(muc, props, mucProps, dbconn, messageProcessors);
 				muc.addParticipantListener(listener.newProxyPacketListener());
 				muc.addMessageListener(listener.newProxyPacketListener());
 

@@ -22,7 +22,7 @@ class ChitoseMUCListener implements PacketListener {
 		VOICED_ROLES.add("moderator");
 	}
 
-	private final List<MessageProcessor> messageProcessors = new ArrayList<>();
+	private final List<MessageProcessorPlugin> messageProcessors = new ArrayList<>();
 
 	private final MultiUserChat muc;
 
@@ -33,18 +33,18 @@ class ChitoseMUCListener implements PacketListener {
 	
 	private final Properties mucProps;
 
-	ChitoseMUCListener(final MultiUserChat muc, final Properties props, final Properties mucProps, final Connection dbconn) {
+	ChitoseMUCListener(final MultiUserChat muc, final Properties props, final Properties mucProps, final Connection dbconn, final List<MessageProcessorPlugin> messageProcessors) {
 		this.mucProps = mucProps;
 		this.muc = muc;
 		conference = muc.getRoom();
 		defaultNickname = mucProps.getProperty("nickname");
 		nick = new AtomicMarkableReference<>(defaultNickname, false);
 		jid = props.getProperty("login") + "@" + props.getProperty("domain") + "/" + props.getProperty("resource");
-
-		populateMessageProcessors(mucProps, props, muc, dbconn);
+		this.messageProcessors.addAll(messageProcessors);
+//		populateMessageProcessors(mucProps, props, muc, dbconn);
 	}
 
-	private void populateMessageProcessors(final Properties mucProps, final Properties props, final MultiUserChat muc, final Connection dbconn) {
+/*	private void populateMessageProcessors(final Properties mucProps, final Properties props, final MultiUserChat muc, final Connection dbconn) {
 		messageProcessors.add(new GoogleMessageProcessor(mucProps, props));
 		messageProcessors.add(new SmoochMessageProcessor(mucProps));
 		messageProcessors.add(new URLExpander(mucProps));
@@ -61,7 +61,7 @@ class ChitoseMUCListener implements PacketListener {
 			e.printStackTrace();
 		}
 	}
-
+*/
 	public PacketListener newProxyPacketListener() {
 		return new PacketListener() {
 			@Override
@@ -90,7 +90,7 @@ class ChitoseMUCListener implements PacketListener {
 			return;
 		}
 
-		CharSequence answer = null;
+/*		CharSequence answer = null;
 		for (final MessageProcessor processor : messageProcessors) {
 			try {
 				answer = processor.process(message);
@@ -108,6 +108,10 @@ class ChitoseMUCListener implements PacketListener {
 			} catch (XMPPException e) {
 				log("Failed to send a message", e);
 			}
+		}
+*/
+		for (final MessageProcessorPlugin plugin : messageProcessors) {
+			plugin.processMessage(message);
 		}
 	}
 	private void processPresence(final Presence presence) {
