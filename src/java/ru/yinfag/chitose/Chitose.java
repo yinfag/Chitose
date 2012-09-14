@@ -18,9 +18,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Timer;
-import java.util.concurrent.CountDownLatch;
 import java.util.ServiceLoader;
+import java.util.Timer;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Chitose's main class. Contains the application entry point.
@@ -38,6 +43,7 @@ public class Chitose {
 		final ServiceLoader<Plugin> pluginLoader = ServiceLoader.load(Plugin.class);
 		final List<Plugin> plugins = new ArrayList<>();
 		final List<MessageProcessorPlugin> messageProcessors = new ArrayList<>();
+		final BlockingQueue<Pair<String, String>> messageQueue = new LinkedBlockingQueue<>();
 		for (final Plugin plugin : pluginLoader) {
 			log("Loading plugin: " + plugin.getClass().getName());
 			if (plugin instanceof MessageProcessorPlugin) {
@@ -47,7 +53,7 @@ public class Chitose {
 				((MessageSenderPlugin) plugin).setMessageSender(new MessageSender() {
 					@Override
 					public void sendToConference(final String conference, final String message) {
-						log("Attempted to send message '" + message + "' to " + conference);
+						messageQueue.add(new Pair<>(conference, message));
 					}
 				});
 			}
@@ -121,6 +127,8 @@ public class Chitose {
 		
 		final Timer tokyotoshoTimer = new Timer();
 
+		final ThreadPoolExecutor executorService = new ThreadPoolExecutor(1, 1, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+		final AtomicBoolean shuttingDown = new AtomicBoolean();
 		try {
 			// attempt login
 			try {
@@ -138,6 +146,7 @@ public class Chitose {
 			
 			final List<MultiUserChat> mucs = new ArrayList<>();
 			Properties mucProps;
+			final Map<String, MultiUserChat> mucByAddress = new HashMap<>();
 		
 			for (final String chatroom : chatrooms) {
 				
@@ -156,6 +165,7 @@ public class Chitose {
 				
 				final MultiUserChat muc = new MultiUserChat(conn, chatroom);
 				mucs.add(muc);
+				mucByAddress.put(chatroom, muc);
 				// add message and presence listeners
 				final ChitoseMUCListener listener =
 						new ChitoseMUCListener(muc, props, mucProps, dbconn, messageProcessors);
@@ -174,9 +184,35 @@ public class Chitose {
 					muc.join(nickname, null, history, 5000);
 				} catch (XMPPException e) {
 					log("Failed to join the chat room", e);
+					mucs.remove(muc);
+					mucByAddress.remove(chatroom);
 				}
 			}
-			
+
+			executorService.execute(new Runnable() {
+				@Override
+				public void run() {
+					while (true) {
+						final Pair<String, String> take;
+						try {
+							take = messageQueue.take();
+						} catch (InterruptedException e) {
+							if (shuttingDown.get()) {
+								break;
+							} else {
+								continue;
+							}
+						}
+						final MultiUserChat multiUserChat = mucByAddress.get(take.getFirst());
+						try {
+							multiUserChat.sendMessage(take.getSecond());
+						} catch (XMPPException e) {
+							log("Failed to send message.", e);
+						}
+					}
+				}
+			});
+
 			try {
 				final Tokyotosho parser = new Tokyotosho(perMucProps, mucs, dbconn);
 				final long tokyotoshoUpdatePeriod = 60000 * Long.parseLong(
@@ -190,6 +226,8 @@ public class Chitose {
 			waitForInterrupt();
 			log("Shutting down gracefully...");
 		} finally {
+			shuttingDown.set(true);
+			executorService.shutdownNow();
 			for (final Plugin plugin : plugins) {
 				plugin.shutdown();
 			}

@@ -23,7 +23,8 @@ public class SmoochPlugin implements MessageProcessorPlugin, MessageSenderPlugin
 	public void processMessage(final Message message) {
 		final String messageBody = message.getBody();
 		if (messageBody != null && messageBody.contains("*smooch*")) {
-			mySender.sendToConference(message.getFrom(), "*nosebleed*");
+			final String from = message.getFrom();
+			mySender.sendToConference(from.substring(0, from.indexOf("/")), "*nosebleed*");
 		}
 	}
 	
