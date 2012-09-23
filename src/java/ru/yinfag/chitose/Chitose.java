@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class Chitose {
 
+	private final static String DEFAULT_CONF_D = "chitose.conf.d";
+
 	/**
 	 * Application entry point. Handles loading of configuration files,
 	 * connecting to server, joining chat rooms, waiting for exit command,
@@ -43,9 +45,6 @@ public class Chitose {
 	 *
 	 * @param args    command line arguments. Ignored.
 	 */
-
-	private final static String DEFAULT_CONF_D = "chitose.conf.d";
-
 	public static void main(final String[] args) {
 		final Map<String, String> properties = new HashMap<>();
 		try {
