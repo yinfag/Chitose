@@ -3,7 +3,10 @@ package ru.yinfag.chitose;
 
 
 public interface Plugin {
-    void init();
+
+	void setProperty(String name, String domain, String value);
+
+	void init();
     
     void shutdown();
 }

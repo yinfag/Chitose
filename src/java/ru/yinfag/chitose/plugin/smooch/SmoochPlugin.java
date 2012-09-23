@@ -15,7 +15,12 @@ public class SmoochPlugin implements MessageProcessorPlugin, MessageSenderPlugin
 	public void setMessageSender(final MessageSender sender) {
 		mySender = sender;
 	}
-	
+
+	@Override
+	public void setProperty(final String name, final String domain, final String value) {
+		//To change body of implemented methods use File | Settings | File Templates.
+	}
+
 	public void init() {
 		//...
 	}

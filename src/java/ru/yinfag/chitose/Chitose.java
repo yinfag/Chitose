@@ -8,8 +8,12 @@ import org.jivesoftware.smackx.muc.MultiUserChat;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -39,13 +43,53 @@ public class Chitose {
 	 *
 	 * @param args    command line arguments. Ignored.
 	 */
+
+	private final static String DEFAULT_CONF_D = "chitose.conf.d";
+
 	public static void main(final String[] args) {
+		final Map<String, String> properties = new HashMap<>();
+		try {
+			Files.walkFileTree(Paths.get(DEFAULT_CONF_D), new FileVisitor<Path>() {
+				@Override
+				public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+
+				@Override
+				public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+					final Properties props = new Properties();
+					try (final Reader reader = Files.newBufferedReader(file, Charset.forName("UTF-8"))) {
+						props.load(reader);
+					} catch (IOException | IllegalArgumentException e) {
+						log("Failed to read properties from " + file, e);
+						return FileVisitResult.SKIP_SUBTREE;
+					}
+					properties.putAll((Map<String, String>) props);
+					return FileVisitResult.CONTINUE;
+				}
+
+				@Override
+				public FileVisitResult visitFileFailed(final Path file, final IOException exc) throws IOException {
+					log("Fail to read configs from " + file);
+					return FileVisitResult.CONTINUE;
+				}
+
+				@Override
+				public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException {
+					return FileVisitResult.CONTINUE;
+				}
+			});
+		} catch (IOException e) {
+			log("Error while reading properties", e);
+		}
+
 		final ServiceLoader<Plugin> pluginLoader = ServiceLoader.load(Plugin.class);
 		final List<Plugin> plugins = new ArrayList<>();
 		final List<MessageProcessorPlugin> messageProcessors = new ArrayList<>();
 		final BlockingQueue<Pair<String, String>> messageQueue = new LinkedBlockingQueue<>();
 		for (final Plugin plugin : pluginLoader) {
-			log("Loading plugin: " + plugin.getClass().getName());
+			final String pluginName = plugin.getClass().getName();
+			log("Loading plugin: " + pluginName);
 			if (plugin instanceof MessageProcessorPlugin) {
 				messageProcessors.add((MessageProcessorPlugin) plugin);
 			}
@@ -56,6 +100,11 @@ public class Chitose {
 						messageQueue.add(new Pair<>(conference, message));
 					}
 				});
+			}
+			for (final String key : properties.keySet()) {
+				if (key.startsWith(pluginName)) {
+					plugin.setProperty(key.substring(pluginName.length() + 1), null, properties.get(key));
+				}
 			}
 			plugin.init();
 			plugins.add(plugin);
