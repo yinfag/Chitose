@@ -12,7 +12,7 @@ public class MessageProcessorUtils {
 	public static final Pattern USER_NICK_PATTERN = Pattern.compile("[^@]+@[^/]+/(.*)");
 	public static final Pattern CONFERENCE_JID_PATTERN = Pattern.compile("^([^\\/]+).*");
 
-	static String getUserNick(final Message message) throws MessageProcessingException {
+	public static String getUserNick(final Message message) throws MessageProcessingException {
 		final Matcher matcher = USER_NICK_PATTERN.matcher(message.getFrom());
 		if (matcher.matches()) {
 			return matcher.group(1);

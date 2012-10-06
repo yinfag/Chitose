@@ -5,25 +5,28 @@ import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
-import java.util.Timer;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -38,6 +41,11 @@ public class Chitose {
 
 	private final static String DEFAULT_CONF_D = "chitose.conf.d";
 
+	private static Map<String, String> nicknameByConference = new HashMap<>();
+	static {
+		nicknameByConference.put("", "Chitose");
+	}
+
 	/**
 	 * Application entry point. Handles loading of configuration files,
 	 * connecting to server, joining chat rooms, waiting for exit command,
@@ -46,44 +54,29 @@ public class Chitose {
 	 * @param args    command line arguments. Ignored.
 	 */
 	public static void main(final String[] args) {
-		final Map<String, String> properties = new HashMap<>();
-		try {
-			Files.walkFileTree(Paths.get(DEFAULT_CONF_D), new FileVisitor<Path>() {
-				@Override
-				public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs) throws IOException {
-					return FileVisitResult.CONTINUE;
-				}
-
-				@Override
-				public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
-					final Properties props = new Properties();
-					try (final Reader reader = Files.newBufferedReader(file, Charset.forName("UTF-8"))) {
-						props.load(reader);
-					} catch (IOException | IllegalArgumentException e) {
-						log("Failed to read properties from " + file, e);
-						return FileVisitResult.SKIP_SUBTREE;
-					}
-					properties.putAll((Map<String, String>) props);
-					return FileVisitResult.CONTINUE;
-				}
-
-				@Override
-				public FileVisitResult visitFileFailed(final Path file, final IOException exc) throws IOException {
-					log("Fail to read configs from " + file);
-					return FileVisitResult.CONTINUE;
-				}
-
-				@Override
-				public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException {
-					return FileVisitResult.CONTINUE;
-				}
-			});
-		} catch (IOException e) {
-			log("Error while reading properties", e);
-		}
 
 		final ServiceLoader<Plugin> pluginLoader = ServiceLoader.load(Plugin.class);
 		final List<Plugin> plugins = new ArrayList<>();
+		try {
+			for (final Plugin plugin : pluginLoader) {
+				log("Created plugin object: " + plugin.getClass().getName());
+				plugins.add(plugin);
+			}
+		} catch (ServiceConfigurationError e) {
+			log("Error while instantiating plugins", e);
+			return;
+		}
+
+		final Path configDir = Paths.get(DEFAULT_CONF_D);
+
+		final HashSet<String> conferences = new HashSet<>();
+		try {
+			loadConfiguration(configDir, conferences, plugins);
+		} catch (IOException e) {
+			log("Error while reading configuration", e);
+			return;
+		}
+
 		final List<MessageProcessorPlugin> messageProcessors = new ArrayList<>();
 		final BlockingQueue<Pair<String, String>> messageQueue = new LinkedBlockingQueue<>();
 		for (final Plugin plugin : pluginLoader) {
@@ -100,53 +93,32 @@ public class Chitose {
 					}
 				});
 			}
-			for (final String key : properties.keySet()) {
-				if (key.startsWith(pluginName)) {
-					plugin.setProperty(key.substring(pluginName.length() + 1), null, properties.get(key));
-				}
+			if (plugin instanceof NicknameAwarePlugin) {
+				((NicknameAwarePlugin) plugin).setNicknameByConference(new NicknameByConference() {
+					@Override
+					public String get(final String conference) {
+						return getNicknameByConference(conference);
+					}
+				});
 			}
 			plugin.init();
 			plugins.add(plugin);
 		}
 
-		final List<String> chatrooms;
-		try {
-			chatrooms = Files.readAllLines(
-					Paths.get("chatrooms.cfg"),
-					Charset.forName("UTF-8")
-			);
-		} catch (IOException e) {
-			log("Failed to load chatroom list", e);
-			return;
-		}
-		
-		final Properties props = new Properties();
-		final Properties chatroomProps = new Properties();
-		
-		final Map<String, Properties> perMucProps = new HashMap<>();
-		
+		final Properties account = new Properties();
 		try (final Reader reader = Files.newBufferedReader(
-			Paths.get("default_chatroom_config.cfg"),
+			configDir.resolve("account.conf"),
 			Charset.forName("UTF-8")
 		)) {
-			chatroomProps.load(reader);
+			account.load(reader);
 		} catch (IOException | IllegalArgumentException e) {
-			e.printStackTrace();
-		}
-		
-		try (final Reader reader = Files.newBufferedReader(
-			Paths.get("chitose.cfg"),
-			Charset.forName("UTF-8")
-		)) {
-			props.load(reader);
-		} catch (IOException | IllegalArgumentException e) {
-			log("Failed to load chitose.cfg", e);
+			log("Failed to load account configuration", e);
 			return;
 		}
 		
 		// get a connection object and connect
 		final XMPPConnection conn =
-				new XMPPConnection(props.getProperty("domain"));
+				new XMPPConnection(account.getProperty("domain"));
 		try {
 			conn.connect();
 		} catch (XMPPException e) {
@@ -161,19 +133,19 @@ public class Chitose {
 			return;
 		}
 		
-		final Connection dbconn;	
-		try {
-			dbconn = DriverManager.getConnection(
-					"jdbc:hsqldb:file:" + props.getProperty("path.to.database"), 
-					"SA",
-					""
-			);
-		} catch (SQLException e) {
-			e.printStackTrace();
-			return;
-		}	
+//		final Connection dbconn;
+//		try {
+//			dbconn = DriverManager.getConnection(
+//					"jdbc:hsqldb:file:" + props.getProperty("path.to.database"),
+//					"SA",
+//					""
+//			);
+//		} catch (SQLException e) {
+//			e.printStackTrace();
+//			return;
+//		}
 		
-		final Timer tokyotoshoTimer = new Timer();
+//		final Timer tokyotoshoTimer = new Timer();
 
 		final ThreadPoolExecutor executorService = new ThreadPoolExecutor(1, 1, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
 		final AtomicBoolean shuttingDown = new AtomicBoolean();
@@ -181,9 +153,9 @@ public class Chitose {
 			// attempt login
 			try {
 				conn.login(
-						props.getProperty("login"),
-						props.getProperty("password"),
-						props.getProperty("resource")
+						account.getProperty("login"),
+						account.getProperty("password"),
+						account.getProperty("resource")
 				);
 			} catch (XMPPException e) {
 				log("Failed to login", e);
@@ -192,31 +164,18 @@ public class Chitose {
 
 			// join all listed conferences
 			
-			final List<MultiUserChat> mucs = new ArrayList<>();
+//			final List<MultiUserChat> mucs = new ArrayList<>();
 			Properties mucProps;
 			final Map<String, MultiUserChat> mucByAddress = new HashMap<>();
 		
-			for (final String chatroom : chatrooms) {
-				
-				mucProps = new Properties(chatroomProps);
-				
-				try (final Reader reader = Files.newBufferedReader(
-						Paths.get(chatroom + ".cfg"),
-						Charset.forName("UTF-8")
-				)) {
-					mucProps.load(reader);
-				} catch (IOException | IllegalArgumentException e) {
-					e.printStackTrace();
-				}
-				
-				perMucProps.put(chatroom, mucProps);
-				
+			for (final String chatroom : conferences) {
 				final MultiUserChat muc = new MultiUserChat(conn, chatroom);
-				mucs.add(muc);
+//				mucs.add(muc);
 				mucByAddress.put(chatroom, muc);
-				// add message and presence listeners
+				final String nickname = getNicknameByConference(chatroom);
 				final ChitoseMUCListener listener =
-						new ChitoseMUCListener(muc, props, mucProps, dbconn, messageProcessors);
+						new ChitoseMUCListener(muc, account, nickname, messageProcessors);
+				// add message and presence listeners
 				muc.addParticipantListener(listener.newProxyPacketListener());
 				muc.addMessageListener(listener.newProxyPacketListener());
 
@@ -225,14 +184,11 @@ public class Chitose {
 				history.setMaxStanzas(0);
 
 				// enter the chatroom
-				
-				final String nickname = mucProps.getProperty("nickname");
-				
 				try {
 					muc.join(nickname, null, history, 5000);
 				} catch (XMPPException e) {
 					log("Failed to join the chat room", e);
-					mucs.remove(muc);
+//					mucs.remove(muc);
 					mucByAddress.remove(chatroom);
 				}
 			}
@@ -261,15 +217,15 @@ public class Chitose {
 				}
 			});
 
-			try {
-				final Tokyotosho parser = new Tokyotosho(perMucProps, mucs, dbconn);
-				final long tokyotoshoUpdatePeriod = 60000 * Long.parseLong(
-					props.getProperty("tokyotosho.update.period", "10")
-				);
-				tokyotoshoTimer.schedule(parser, 30000, tokyotoshoUpdatePeriod);
-			} catch (SQLException e) {
-				log("Failed to initialize Tokyotosho monitor", e);
-			}
+//			try {
+//				final Tokyotosho parser = new Tokyotosho(perMucProps, mucs, dbconn);
+//				final long tokyotoshoUpdatePeriod = 60000 * Long.parseLong(
+//						props.getProperty("tokyotosho.update.period", "10")
+//				);
+//				tokyotoshoTimer.schedule(parser, 30000, tokyotoshoUpdatePeriod);
+//			} catch (SQLException e) {
+//				log("Failed to initialize Tokyotosho monitor", e);
+//			}
 
 			waitForInterrupt();
 			log("Shutting down gracefully...");
@@ -279,16 +235,108 @@ public class Chitose {
 			for (final Plugin plugin : plugins) {
 				plugin.shutdown();
 			}
-			tokyotoshoTimer.cancel();
+//			tokyotoshoTimer.cancel();
 			// disconnect from server
 			conn.disconnect();
-			try {
-				dbconn.createStatement().execute("shutdown");
-				dbconn.close();
-			} catch (SQLException e) {
-				log("Error while closing DB connection", e);
-			}
+//			try {
+//				dbconn.createStatement().execute("shutdown");
+//				dbconn.close();
+//			} catch (SQLException e) {
+//				log("Error while closing DB connection", e);
+//			}
 		}
+	}
+
+	private static String getNicknameByConference(final String conference) {
+		return nicknameByConference.containsKey(conference) ?
+				nicknameByConference.get(conference) :
+				nicknameByConference.get("");
+	}
+
+	private static void loadConfiguration(final Path confDir, final Set<String> conferences, final List<Plugin> plugins) throws IOException {
+		if (!Files.exists(confDir)) {
+			throw new FileNotFoundException("The specified configuration directory does not exist");
+		}
+		if (!Files.isDirectory(confDir)) {
+			throw new NotDirectoryException(confDir.toString());
+		}
+		// get conference list
+		// todo: check validity
+		conferences.addAll(Files.readAllLines(confDir.resolve("conferences.list"), Charset.forName("UTF-8")));
+		final Map<String, Plugin> pluginByClassName = new HashMap<>();
+		for (final Plugin plugin : plugins) {
+			pluginByClassName.put(plugin.getClass().getName(), plugin);
+		}
+		Files.walkFileTree(
+				confDir,
+				Collections.singleton(FileVisitOption.FOLLOW_LINKS),
+				2,
+				new FileVisitor<Path>() {
+					private int depth = -1;
+					private String conference;
+					@Override
+					public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs) throws IOException {
+						++depth;
+						switch (depth) {
+							case 0:
+								return FileVisitResult.CONTINUE;
+							case 1:
+								final String dirName = dir.getFileName().toString();
+								if ("default".equals(dirName)) {
+									conference = "";
+									return FileVisitResult.CONTINUE;
+								}
+								if (conferences.contains(dirName)) {
+									conference = dirName;
+									return FileVisitResult.CONTINUE;
+								}
+								return FileVisitResult.SKIP_SUBTREE;
+							default:
+								return FileVisitResult.SKIP_SUBTREE;
+						}
+					}
+
+					@Override
+					public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+						if (depth != 1) {
+							return FileVisitResult.SKIP_SUBTREE;
+						}
+						final String fileName = file.getFileName().toString();
+						if ("chitose.conf".equals(fileName)) {
+							final Properties properties = new Properties();
+							try (final Reader reader = Files.newBufferedReader(file, Charset.forName("UTF-8"))) {
+								properties.load(reader);
+							}
+							final String nickname = properties.getProperty("nickname");
+							if (nickname != null) {
+								nicknameByConference.put(conference, nickname);
+							}
+						} else if (pluginByClassName.containsKey(fileName)) {
+							final Properties properties = new Properties();
+							try (final Reader reader = Files.newBufferedReader(file, Charset.forName("UTF-8"))) {
+								properties.load(reader);
+							}
+							final Plugin plugin = pluginByClassName.get(fileName);
+							for (final String key : properties.stringPropertyNames()) {
+								plugin.setProperty(key, conference, properties.getProperty(key));
+							}
+						}
+						return FileVisitResult.CONTINUE;
+					}
+
+					@Override
+					public FileVisitResult visitFileFailed(final Path file, final IOException exc) {
+						// todo: log
+						return FileVisitResult.CONTINUE;
+					}
+
+					@Override
+					public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) {
+						--depth;
+						return FileVisitResult.CONTINUE;
+					}
+				}
+		);
 	}
 
 	/**
@@ -318,7 +366,7 @@ public class Chitose {
 	 * @param e          the error to report, or <code>null</code> if it's an
 	 *                      informational message.
 	 */
-	private static void log(final String message, final Exception e) {
+	private static void log(final String message, final Throwable e) {
 		System.out.println(message);
 		if (e != null) {
 			e.printStackTrace();

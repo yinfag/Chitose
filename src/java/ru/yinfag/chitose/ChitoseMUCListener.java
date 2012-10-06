@@ -8,10 +8,13 @@ import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.MUCUser;
-import java.sql.Connection;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicMarkableReference;
-import java.sql.SQLException;
 
 class ChitoseMUCListener implements PacketListener {
 
@@ -31,15 +34,12 @@ class ChitoseMUCListener implements PacketListener {
 	private final String jid;
 	private final AtomicMarkableReference<String> nick;
 	
-	private final Properties mucProps;
-
-	ChitoseMUCListener(final MultiUserChat muc, final Properties props, final Properties mucProps, final Connection dbconn, final List<MessageProcessorPlugin> messageProcessors) {
-		this.mucProps = mucProps;
+	ChitoseMUCListener(final MultiUserChat muc, final Properties account, final String nickname, final List<MessageProcessorPlugin> messageProcessors) {
 		this.muc = muc;
 		conference = muc.getRoom();
-		defaultNickname = mucProps.getProperty("nickname");
-		nick = new AtomicMarkableReference<>(defaultNickname, false);
-		jid = props.getProperty("login") + "@" + props.getProperty("domain") + "/" + props.getProperty("resource");
+		defaultNickname = nickname;
+		nick = new AtomicMarkableReference<>(nickname, false);
+		jid = account.getProperty("login") + "@" + account.getProperty("domain") + "/" + account.getProperty("resource");
 		this.messageProcessors.addAll(messageProcessors);
 //		populateMessageProcessors(mucProps, props, muc, dbconn);
 	}
@@ -111,7 +111,12 @@ class ChitoseMUCListener implements PacketListener {
 		}
 */
 		for (final MessageProcessorPlugin plugin : messageProcessors) {
-			plugin.processMessage(message);
+			log(" trying " + plugin);
+			try {
+				plugin.processMessage(message);
+			} catch (MessageProcessingException e) {
+				log("Error while processing message", e);
+			}
 		}
 	}
 	private void processPresence(final Presence presence) {
