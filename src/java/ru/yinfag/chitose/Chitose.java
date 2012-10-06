@@ -3,8 +3,10 @@ package ru.yinfag.chitose;
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.packet.XHTMLExtension;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -81,10 +83,10 @@ public class Chitose {
 
 		final List<ConferenceMessageProcessorPlugin> conferenceMessageProcessors = new ArrayList<>();
 		final List<PresenceProcessorPlugin> presenceProcessors = new ArrayList<>();
-		final BlockingQueue<Pair<String, String>> conferenceMessageQueue = new LinkedBlockingQueue<>();
+		final BlockingQueue<Message> conferenceMessageQueue = new LinkedBlockingQueue<>();
 
 		final List<ChatMessageProcessorPlugin> chatMessageProcessors = new ArrayList<>();
-		final BlockingQueue<Pair<String, String>> privateMessageQueue = new LinkedBlockingQueue<>();
+		final BlockingQueue<Message> privateMessageQueue = new LinkedBlockingQueue<>();
 
 		for (final Plugin plugin : pluginLoader) {
 			final String pluginName = plugin.getClass().getName();
@@ -101,12 +103,27 @@ public class Chitose {
 			if (plugin instanceof MessageSenderPlugin) {
 				((MessageSenderPlugin) plugin).setMessageSender(new MessageSender() {
 					@Override
-					public void sendToConference(final String conference, final String message) {
-						conferenceMessageQueue.add(new Pair<>(conference, message));
+					public void sendToConference(final String conference, final String text) {
+						final Message message = new Message(conference, Message.Type.groupchat);
+						message.addBody(null, text);
+						conferenceMessageQueue.add(message);
 					}
+
 					@Override
-					public void sendToUser(final String user, final String message) {
-						privateMessageQueue.add(new Pair<>(user, message));
+					public void sendToConference(final String conference, final String text, final String xhtml) {
+						final Message message = new Message(conference, Message.Type.groupchat);
+						message.addBody(null, text);
+						final XHTMLExtension xhtmlExtension = new XHTMLExtension();
+						xhtmlExtension.addBody(xhtml);
+						message.addExtension(xhtmlExtension);
+						conferenceMessageQueue.add(message);
+					}
+
+					@Override
+					public void sendToUser(final String user, final String text) {
+						final Message message = new Message(user, Message.Type.chat);
+						message.addBody(null, text);
+						privateMessageQueue.add(message);
 					}
 				});
 			}
@@ -215,9 +232,9 @@ public class Chitose {
 						@Override
 						public void run() {
 							while (true) {
-								final Pair<String, String> take;
+								final Message message;
 								try {
-									take = conferenceMessageQueue.take();
+									message = conferenceMessageQueue.take();
 								} catch (InterruptedException e) {
 									if (shuttingDown.get()) {
 										break;
@@ -225,9 +242,9 @@ public class Chitose {
 										continue;
 									}
 								}
-								final MultiUserChat multiUserChat = mucByAddress.get(take.getFirst());
+								final MultiUserChat multiUserChat = mucByAddress.get(message.getTo());
 								try {
-									multiUserChat.sendMessage(take.getSecond());
+									multiUserChat.sendMessage(message);
 								} catch (XMPPException e) {
 									log("Failed to send message.", e);
 								}
@@ -246,9 +263,9 @@ public class Chitose {
 						@Override
 						public void run() {
 							while (true) {
-								final Pair<String, String> take;
+								final Message message;
 								try {
-									take = privateMessageQueue.take();
+									message = privateMessageQueue.take();
 								} catch (InterruptedException e) {
 									if (shuttingDown.get()) {
 										break;
@@ -256,7 +273,7 @@ public class Chitose {
 										continue;
 									}
 								}
-								final String jid = take.getFirst();
+								final String jid = message.getTo();
 								final Chat chat;
 								if (chatByAddress.containsKey(jid)) {
 									chat = chatByAddress.get(jid);
@@ -264,7 +281,7 @@ public class Chitose {
 									chatByAddress.put(jid, chat = conn.getChatManager().createChat(jid, chatListener));
 								}
 								try {
-									chat.sendMessage(take.getSecond());
+									chat.sendMessage(message);
 								} catch (XMPPException e) {
 									log("Failed to send message.", e);
 								}

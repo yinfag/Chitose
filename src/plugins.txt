@@ -1,2 +1,3 @@
 ru.yinfag.chitose.plugin.smooch.SmoochPlugin
 ru.yinfag.chitose.plugin.dice.DicePlugin
+ru.yinfag.chitose.plugin.urlexpander.UrlExpanderPlugin
