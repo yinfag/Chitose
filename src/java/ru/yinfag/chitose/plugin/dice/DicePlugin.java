@@ -80,7 +80,7 @@ public class DicePlugin implements ConferenceMessageProcessorPlugin, MessageSend
 
 		final String dcString = m.group(1);
 		final String dsString = m.group(2);
-		if (dcString.length() > 4 || dsString.length() > 5) {
+		if (dcString.length() > 2 || dsString.length() > 5) {
 			mySender.sendToConference(
 					conference,
 					userNick + ": я не настолько умная же! >_<\""
@@ -90,13 +90,20 @@ public class DicePlugin implements ConferenceMessageProcessorPlugin, MessageSend
 		final int diceCount = Integer.parseInt(dcString);
 		final int dieSides = Integer.parseInt(dsString);
 		final Random random = ThreadLocalRandom.current();
+		final StringBuilder stringBuilder = new StringBuilder();
 		int result = 0;
 		for (int i = 0; i < diceCount; i++) {
-			result += random.nextInt(dieSides) + 1;
+			final int die = random.nextInt(dieSides) + 1;
+			result += die;
+			if (i != 0) {
+				stringBuilder.append(" + ");
+			}
+			stringBuilder.append(die);
 		}
 		mySender.sendToConference(
 				conference,
-				userNick + ": Выпало " + result + ", такие дела, нян!"
+				userNick + ": Выпало " + stringBuilder +
+						" = " + result + ", такие дела, нян!"
 		);
 	}
 }
