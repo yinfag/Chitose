@@ -1,8 +1,8 @@
 package ru.yinfag.chitose.plugin.dice;
 
 import org.jivesoftware.smack.packet.Message;
+import ru.yinfag.chitose.ConferenceMessageProcessorPlugin;
 import ru.yinfag.chitose.MessageProcessingException;
-import ru.yinfag.chitose.MessageProcessorPlugin;
 import ru.yinfag.chitose.MessageProcessorUtils;
 import ru.yinfag.chitose.MessageSender;
 import ru.yinfag.chitose.MessageSenderPlugin;
@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  * Time: 15:50
  * To change this template use File | Settings | File Templates.
  */
-public class DicePlugin implements MessageProcessorPlugin, MessageSenderPlugin, NicknameAwarePlugin {
+public class DicePlugin implements ConferenceMessageProcessorPlugin, MessageSenderPlugin, NicknameAwarePlugin {
 
 	private MessageSender mySender;
 	private NicknameByConference myNicknameByConference;
@@ -51,7 +51,7 @@ public class DicePlugin implements MessageProcessorPlugin, MessageSenderPlugin, 
 	public void shutdown() {
 	}
 
-	public void processMessage(final Message message)
+	public void processConferenceMessage(final Message message)
 			throws MessageProcessingException {
 		final String from = message.getFrom();
 		final String conference = from.substring(0, from.indexOf("/"));

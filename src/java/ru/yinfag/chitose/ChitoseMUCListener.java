@@ -25,7 +25,7 @@ class ChitoseMUCListener implements PacketListener {
 		VOICED_ROLES.add("moderator");
 	}
 
-	private final List<MessageProcessorPlugin> messageProcessors = new ArrayList<>();
+	private final List<ConferenceMessageProcessorPlugin> messageProcessors = new ArrayList<>();
 	private final List<PresenceProcessorPlugin> presenceProcessors = new ArrayList<>();
 
 	private final MultiUserChat muc;
@@ -35,7 +35,7 @@ class ChitoseMUCListener implements PacketListener {
 	private final String jid;
 	private final AtomicMarkableReference<String> nick;
 	
-	ChitoseMUCListener(final MultiUserChat muc, final Properties account, final String nickname, final List<MessageProcessorPlugin> messageProcessors, final List<PresenceProcessorPlugin> presenceProcessors) {
+	ChitoseMUCListener(final MultiUserChat muc, final Properties account, final String nickname, final List<ConferenceMessageProcessorPlugin> messageProcessors, final List<PresenceProcessorPlugin> presenceProcessors) {
 		this.muc = muc;
 		conference = muc.getRoom();
 		defaultNickname = nickname;
@@ -113,10 +113,10 @@ class ChitoseMUCListener implements PacketListener {
 			}
 		}
 */
-		for (final MessageProcessorPlugin plugin : messageProcessors) {
+		for (final ConferenceMessageProcessorPlugin plugin : messageProcessors) {
 			log(" trying " + plugin);
 			try {
-				plugin.processMessage(message);
+				plugin.processConferenceMessage(message);
 			} catch (MessageProcessingException e) {
 				log("Error while processing message", e);
 			}

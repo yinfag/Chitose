@@ -1,12 +1,12 @@
 package ru.yinfag.chitose.plugin.smooch;
 
-import ru.yinfag.chitose.MessageProcessorPlugin;
+import ru.yinfag.chitose.ConferenceMessageProcessorPlugin;
 import ru.yinfag.chitose.MessageSenderPlugin;
 import ru.yinfag.chitose.MessageSender;
 import org.jivesoftware.smack.packet.Message;
 
 
-public class SmoochPlugin implements MessageProcessorPlugin, MessageSenderPlugin {
+public class SmoochPlugin implements ConferenceMessageProcessorPlugin, MessageSenderPlugin {
 	
 	private MessageSender mySender;
 	
@@ -22,7 +22,7 @@ public class SmoochPlugin implements MessageProcessorPlugin, MessageSenderPlugin
 	public void init() {
 	}
 	
-	public void processMessage(final Message message) {
+	public void processConferenceMessage(final Message message) {
 		final String messageBody = message.getBody();
 		if (messageBody != null && messageBody.contains("*smooch*")) {
 			final String from = message.getFrom();

@@ -1,5 +1,6 @@
 package ru.yinfag.chitose;
 
+import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.muc.DiscussionHistory;
@@ -29,8 +30,9 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -77,23 +79,34 @@ public class Chitose {
 			return;
 		}
 
-		final List<MessageProcessorPlugin> messageProcessors = new ArrayList<>();
+		final List<ConferenceMessageProcessorPlugin> conferenceMessageProcessors = new ArrayList<>();
 		final List<PresenceProcessorPlugin> presenceProcessors = new ArrayList<>();
-		final BlockingQueue<Pair<String, String>> messageQueue = new LinkedBlockingQueue<>();
+		final BlockingQueue<Pair<String, String>> conferenceMessageQueue = new LinkedBlockingQueue<>();
+
+		final List<ChatMessageProcessorPlugin> chatMessageProcessors = new ArrayList<>();
+		final BlockingQueue<Pair<String, String>> privateMessageQueue = new LinkedBlockingQueue<>();
+
 		for (final Plugin plugin : pluginLoader) {
 			final String pluginName = plugin.getClass().getName();
 			log("Loading plugin: " + pluginName);
-			if (plugin instanceof MessageProcessorPlugin) {
-				messageProcessors.add((MessageProcessorPlugin) plugin);
+			if (plugin instanceof ConferenceMessageProcessorPlugin) {
+				conferenceMessageProcessors.add((ConferenceMessageProcessorPlugin) plugin);
 			}
 			if (plugin instanceof PresenceProcessorPlugin) {
 				presenceProcessors.add((PresenceProcessorPlugin) plugin);
+			}
+			if (plugin instanceof ChatMessageProcessorPlugin) {
+				chatMessageProcessors.add((ChatMessageProcessorPlugin) plugin);
 			}
 			if (plugin instanceof MessageSenderPlugin) {
 				((MessageSenderPlugin) plugin).setMessageSender(new MessageSender() {
 					@Override
 					public void sendToConference(final String conference, final String message) {
-						messageQueue.add(new Pair<>(conference, message));
+						conferenceMessageQueue.add(new Pair<>(conference, message));
+					}
+					@Override
+					public void sendToUser(final String user, final String message) {
+						privateMessageQueue.add(new Pair<>(user, message));
 					}
 				});
 			}
@@ -151,7 +164,7 @@ public class Chitose {
 		
 //		final Timer tokyotoshoTimer = new Timer();
 
-		final ThreadPoolExecutor executorService = new ThreadPoolExecutor(1, 1, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+		final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
 		final AtomicBoolean shuttingDown = new AtomicBoolean();
 		try {
 			// attempt login
@@ -178,7 +191,7 @@ public class Chitose {
 				mucByAddress.put(chatroom, muc);
 				final String nickname = getNicknameByConference(chatroom);
 				final ChitoseMUCListener listener =
-						new ChitoseMUCListener(muc, account, nickname, messageProcessors, presenceProcessors);
+						new ChitoseMUCListener(muc, account, nickname, conferenceMessageProcessors, presenceProcessors);
 				// add message and presence listeners
 				muc.addParticipantListener(listener.newProxyPacketListener());
 				muc.addMessageListener(listener.newProxyPacketListener());
@@ -197,29 +210,71 @@ public class Chitose {
 				}
 			}
 
-			executorService.execute(new Runnable() {
-				@Override
-				public void run() {
-					while (true) {
-						final Pair<String, String> take;
-						try {
-							take = messageQueue.take();
-						} catch (InterruptedException e) {
-							if (shuttingDown.get()) {
-								break;
-							} else {
-								continue;
+			executorService.scheduleWithFixedDelay(
+					new Runnable() {
+						@Override
+						public void run() {
+							while (true) {
+								final Pair<String, String> take;
+								try {
+									take = conferenceMessageQueue.take();
+								} catch (InterruptedException e) {
+									if (shuttingDown.get()) {
+										break;
+									} else {
+										continue;
+									}
+								}
+								final MultiUserChat multiUserChat = mucByAddress.get(take.getFirst());
+								try {
+									multiUserChat.sendMessage(take.getSecond());
+								} catch (XMPPException e) {
+									log("Failed to send message.", e);
+								}
 							}
 						}
-						final MultiUserChat multiUserChat = mucByAddress.get(take.getFirst());
-						try {
-							multiUserChat.sendMessage(take.getSecond());
-						} catch (XMPPException e) {
-							log("Failed to send message.", e);
+					},
+					0,
+					1,
+					TimeUnit.SECONDS
+			);
+
+			final ChitoseChatListener chatListener = new ChitoseChatListener(chatMessageProcessors);
+			final Map<String, Chat> chatByAddress = new HashMap<>();
+			executorService.scheduleWithFixedDelay(
+					new Runnable() {
+						@Override
+						public void run() {
+							while (true) {
+								final Pair<String, String> take;
+								try {
+									take = privateMessageQueue.take();
+								} catch (InterruptedException e) {
+									if (shuttingDown.get()) {
+										break;
+									} else {
+										continue;
+									}
+								}
+								final String jid = take.getFirst();
+								final Chat chat;
+								if (chatByAddress.containsKey(jid)) {
+									chat = chatByAddress.get(jid);
+								} else {
+									chatByAddress.put(jid, chat = conn.getChatManager().createChat(jid, chatListener));
+								}
+								try {
+									chat.sendMessage(take.getSecond());
+								} catch (XMPPException e) {
+									log("Failed to send message.", e);
+								}
+							}
 						}
-					}
-				}
-			});
+					},
+					0,
+					1,
+					TimeUnit.SECONDS
+			);
 
 //			try {
 //				final Tokyotosho parser = new Tokyotosho(perMucProps, mucs, dbconn);
