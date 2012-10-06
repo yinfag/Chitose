@@ -26,6 +26,7 @@ class ChitoseMUCListener implements PacketListener {
 	}
 
 	private final List<MessageProcessorPlugin> messageProcessors = new ArrayList<>();
+	private final List<PresenceProcessorPlugin> presenceProcessors = new ArrayList<>();
 
 	private final MultiUserChat muc;
 
@@ -34,13 +35,15 @@ class ChitoseMUCListener implements PacketListener {
 	private final String jid;
 	private final AtomicMarkableReference<String> nick;
 	
-	ChitoseMUCListener(final MultiUserChat muc, final Properties account, final String nickname, final List<MessageProcessorPlugin> messageProcessors) {
+	ChitoseMUCListener(final MultiUserChat muc, final Properties account, final String nickname, final List<MessageProcessorPlugin> messageProcessors, final List<PresenceProcessorPlugin> presenceProcessors) {
 		this.muc = muc;
 		conference = muc.getRoom();
 		defaultNickname = nickname;
 		nick = new AtomicMarkableReference<>(nickname, false);
 		jid = account.getProperty("login") + "@" + account.getProperty("domain") + "/" + account.getProperty("resource");
 		this.messageProcessors.addAll(messageProcessors);
+		this.presenceProcessors.addAll(presenceProcessors);
+
 //		populateMessageProcessors(mucProps, props, muc, dbconn);
 	}
 
@@ -120,7 +123,7 @@ class ChitoseMUCListener implements PacketListener {
 		}
 	}
 	private void processPresence(final Presence presence) {
-		System.out.println(presence.getFrom());
+		log(presence.getFrom());
 		if ((conference + "/" + nick.getReference()).equals(presence.getFrom())) {
 			for (final PacketExtension extension : presence.getExtensions()) {
 				System.out.println("e: " + extension);
@@ -149,6 +152,15 @@ class ChitoseMUCListener implements PacketListener {
 							log("Failed to say thanks", e);
 						}
 					}
+				}
+			}
+		} else {
+			for (final PresenceProcessorPlugin plugin : presenceProcessors) {
+				log(" trying " + plugin);
+				try {
+					plugin.processPresence(presence);
+				} catch (PresenceProcessingException e) {
+					log("Error while processing presence", e);
 				}
 			}
 		}

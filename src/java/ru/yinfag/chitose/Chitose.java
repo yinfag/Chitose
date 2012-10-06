@@ -78,12 +78,16 @@ public class Chitose {
 		}
 
 		final List<MessageProcessorPlugin> messageProcessors = new ArrayList<>();
+		final List<PresenceProcessorPlugin> presenceProcessors = new ArrayList<>();
 		final BlockingQueue<Pair<String, String>> messageQueue = new LinkedBlockingQueue<>();
 		for (final Plugin plugin : pluginLoader) {
 			final String pluginName = plugin.getClass().getName();
 			log("Loading plugin: " + pluginName);
 			if (plugin instanceof MessageProcessorPlugin) {
 				messageProcessors.add((MessageProcessorPlugin) plugin);
+			}
+			if (plugin instanceof PresenceProcessorPlugin) {
+				presenceProcessors.add((PresenceProcessorPlugin) plugin);
 			}
 			if (plugin instanceof MessageSenderPlugin) {
 				((MessageSenderPlugin) plugin).setMessageSender(new MessageSender() {
@@ -174,7 +178,7 @@ public class Chitose {
 				mucByAddress.put(chatroom, muc);
 				final String nickname = getNicknameByConference(chatroom);
 				final ChitoseMUCListener listener =
-						new ChitoseMUCListener(muc, account, nickname, messageProcessors);
+						new ChitoseMUCListener(muc, account, nickname, messageProcessors, presenceProcessors);
 				// add message and presence listeners
 				muc.addParticipantListener(listener.newProxyPacketListener());
 				muc.addMessageListener(listener.newProxyPacketListener());
