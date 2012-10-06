@@ -42,17 +42,17 @@ public class UrlExpanderPlugin implements ConferenceMessageProcessorPlugin, Mess
 		while (m.find()) {
 			if (textBody == null) {
 				textBody = new StringBuilder("Короткие урлы ведут сюда:");
-				xhtmlBody = new StringBuilder("<p>Короткие урлы ведут сюда:</p>");
+				xhtmlBody = new StringBuilder("<body>Короткие урлы ведут сюда:");
 			}
 			final String shortUrlString = m.group(0);
 			textBody.append("\n").append(shortUrlString).append(" -> ");
-			xhtmlBody.append("\n<p>").append(shortUrlString).append(" -> ");
+			xhtmlBody.append("<br/>").append(shortUrlString).append(" -> ");
 			final URL shortUrl;
 			try {
 				shortUrl = new URL(shortUrlString);
 			} catch (MalformedURLException e) {
 				textBody.append("(плохой урл почему-то)");
-				xhtmlBody.append("(плохой урл почему-то)</p>");
+				xhtmlBody.append("(плохой урл почему-то)");
 				continue;
 			}
 			final HttpURLConnection con;
@@ -63,17 +63,16 @@ public class UrlExpanderPlugin implements ConferenceMessageProcessorPlugin, Mess
 			} catch (IOException e) {
 				log("Не получилось открыть соединение для " + shortUrlString, e);
 				textBody.append("(не удалось открыть соединение)");
-				xhtmlBody.append("(не удалось открыть соединение)</p>");
+				xhtmlBody.append("(не удалось открыть соединение)");
 				continue;
 			}
-			textBody.append(con.getHeaderField("Location"));
-			xhtmlBody
-					.append("<a href=\"")
-					.append(con.getHeaderField("Location"))
-					.append("\">сюда</a></p>");
+			final String location = con.getHeaderField("Location");
+			textBody.append(location);
+			xhtmlBody.append("<a href=\"").append(location).append("\">сюда</a>");
 		}
 		if (textBody != null) {
-			mySender.sendToConference(conference, "", xhtmlBody.toString());
+			xhtmlBody.append("</body>");
+			mySender.sendToConference(conference, textBody.toString(), xhtmlBody.toString());
 		}
 	}
 
