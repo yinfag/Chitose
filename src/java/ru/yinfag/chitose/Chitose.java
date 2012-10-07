@@ -6,6 +6,7 @@ import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.packet.XHTMLExtension;
 
 import java.io.FileNotFoundException;
@@ -88,6 +89,8 @@ public class Chitose {
 		final List<ChatMessageProcessorPlugin> chatMessageProcessors = new ArrayList<>();
 		final BlockingQueue<Message> privateMessageQueue = new LinkedBlockingQueue<>();
 
+		final Map<String, MultiUserChat> mucByAddress = new HashMap<>();
+
 		for (final Plugin plugin : pluginLoader) {
 			final String pluginName = plugin.getClass().getName();
 			log("Loading plugin: " + pluginName);
@@ -132,6 +135,21 @@ public class Chitose {
 					@Override
 					public String get(final String conference) {
 						return getNicknameByConference(conference);
+					}
+				});
+			}
+			if (plugin instanceof MucAdministratorPlugin) {
+				((MucAdministratorPlugin) plugin).setMucAdministrator(new MucAdministrator() {
+					@Override
+					public Occupant getOccupantData(final String user) {
+						final String conference = user.substring(0, user.indexOf("/"));
+						return mucByAddress.get(conference).getOccupant(user);
+					}
+
+					@Override
+					public void grantVoice(final String user) throws XMPPException {
+						final String[] userConferenceAndNick = user.split("/", 2);
+						mucByAddress.get(userConferenceAndNick[0]).grantVoice(userConferenceAndNick[1]);
 					}
 				});
 			}
@@ -200,8 +218,7 @@ public class Chitose {
 			
 //			final List<MultiUserChat> mucs = new ArrayList<>();
 			Properties mucProps;
-			final Map<String, MultiUserChat> mucByAddress = new HashMap<>();
-		
+
 			for (final String chatroom : conferences) {
 				final MultiUserChat muc = new MultiUserChat(conn, chatroom);
 //				mucs.add(muc);

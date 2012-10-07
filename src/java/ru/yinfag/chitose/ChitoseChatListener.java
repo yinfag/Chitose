@@ -25,6 +25,7 @@ public class ChitoseChatListener implements MessageListener {
 	public void processMessage(final Chat chat, final Message message) {
 		log("private message from " + message.getFrom());
 		for (final ChatMessageProcessorPlugin processor : myChatMessageProcessors) {
+			log(" trying " + processor);
 			try {
 				processor.processChatMessage(message);
 			} catch (MessageProcessingException e) {

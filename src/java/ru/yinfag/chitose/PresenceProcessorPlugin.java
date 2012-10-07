@@ -10,5 +10,7 @@ import org.jivesoftware.smack.packet.Presence;
  * To change this template use File | Settings | File Templates.
  */
 public interface PresenceProcessorPlugin extends Plugin {
+	boolean isProcessingOwnPresence();
+
 	void processPresence(Presence presence) throws PresenceProcessingException;
 }

@@ -123,8 +123,17 @@ class ChitoseMUCListener implements PacketListener {
 		}
 	}
 	private void processPresence(final Presence presence) {
-		log(presence.getFrom());
-		if ((conference + "/" + nick.getReference()).equals(presence.getFrom())) {
+		log("Presence from " + presence.getFrom());
+		log(" t: " + presence.getType());
+		log(" m: " + presence.getMode());
+		for (final String propertyName : presence.getPropertyNames()) {
+			log(" p: " + propertyName + " = " + presence.getProperty(propertyName));
+		}
+		for (final PacketExtension extension : presence.getExtensions()) {
+			log(" e: " + extension);
+		}
+		final boolean presenceIsMine = (conference + "/" + nick.getReference()).equals(presence.getFrom());
+		if (presenceIsMine) {
 			for (final PacketExtension extension : presence.getExtensions()) {
 				System.out.println("e: " + extension);
 				if (extension instanceof MUCUser) {
@@ -154,14 +163,17 @@ class ChitoseMUCListener implements PacketListener {
 					}
 				}
 			}
-		} else {
-			for (final PresenceProcessorPlugin plugin : presenceProcessors) {
-				log(" trying " + plugin);
-				try {
-					plugin.processPresence(presence);
-				} catch (PresenceProcessingException e) {
-					log("Error while processing presence", e);
-				}
+		}
+
+		for (final PresenceProcessorPlugin plugin : presenceProcessors) {
+			if (presenceIsMine && !plugin.isProcessingOwnPresence()) {
+				continue;
+			}
+			log(" trying " + plugin);
+			try {
+				plugin.processPresence(presence);
+			} catch (PresenceProcessingException e) {
+				log("Error while processing presence", e);
 			}
 		}
 	}
