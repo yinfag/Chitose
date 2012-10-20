@@ -33,5 +33,10 @@ public class SmoochPlugin implements ConferenceMessageProcessorPlugin, MessageSe
 	public void shutdown() {
 	}
 
+	@Override
+	public String getHelpMessage(final String conference) {
+		return null;
+	}
+
 }
 

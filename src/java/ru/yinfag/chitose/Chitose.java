@@ -61,6 +61,7 @@ public class Chitose {
 
 		final ServiceLoader<Plugin> pluginLoader = ServiceLoader.load(Plugin.class);
 		final List<Plugin> plugins = new ArrayList<>();
+
 		try {
 			for (final Plugin plugin : pluginLoader) {
 				log("Created plugin object: " + plugin.getClass().getName());
@@ -70,6 +71,9 @@ public class Chitose {
 			log("Error while instantiating plugins", e);
 			return;
 		}
+		log("Adding Help plugin");
+		final Help help = new Help(plugins);
+		plugins.add(help);
 
 		final Path configDir = Paths.get(DEFAULT_CONF_D);
 
@@ -87,8 +91,39 @@ public class Chitose {
 
 		final List<ChatMessageProcessorPlugin> chatMessageProcessors = new ArrayList<>();
 		final BlockingQueue<Message> privateMessageQueue = new LinkedBlockingQueue<>();
+		final MessageSender messageSender = new MessageSender() {
+			@Override
+			public void sendToConference(final String conference, final String text) {
+				final Message message = new Message(conference, Message.Type.groupchat);
+				message.addBody(null, text);
+				conferenceMessageQueue.add(message);
+			}
 
-		for (final Plugin plugin : pluginLoader) {
+			@Override
+			public void sendToConference(final String conference, final String text, final String xhtml) {
+				final Message message = new Message(conference, Message.Type.groupchat);
+				message.addBody(null, text);
+				final XHTMLExtension xhtmlExtension = new XHTMLExtension();
+				xhtmlExtension.addBody(xhtml);
+				message.addExtension(xhtmlExtension);
+				conferenceMessageQueue.add(message);
+			}
+
+			@Override
+			public void sendToUser(final String user, final String text) {
+				final Message message = new Message(user, Message.Type.chat);
+				message.addBody(null, text);
+				privateMessageQueue.add(message);
+			}
+		};
+		final NicknameByConference nicknameByConference = new NicknameByConference() {
+			@Override
+			public String get(final String conference) {
+				return getNicknameByConference(conference);
+			}
+		};
+
+		for (final Plugin plugin : plugins) {
 			final String pluginName = plugin.getClass().getName();
 			log("Loading plugin: " + pluginName);
 			if (plugin instanceof ConferenceMessageProcessorPlugin) {
@@ -101,42 +136,12 @@ public class Chitose {
 				chatMessageProcessors.add((ChatMessageProcessorPlugin) plugin);
 			}
 			if (plugin instanceof MessageSenderPlugin) {
-				((MessageSenderPlugin) plugin).setMessageSender(new MessageSender() {
-					@Override
-					public void sendToConference(final String conference, final String text) {
-						final Message message = new Message(conference, Message.Type.groupchat);
-						message.addBody(null, text);
-						conferenceMessageQueue.add(message);
-					}
-
-					@Override
-					public void sendToConference(final String conference, final String text, final String xhtml) {
-						final Message message = new Message(conference, Message.Type.groupchat);
-						message.addBody(null, text);
-						final XHTMLExtension xhtmlExtension = new XHTMLExtension();
-						xhtmlExtension.addBody(xhtml);
-						message.addExtension(xhtmlExtension);
-						conferenceMessageQueue.add(message);
-					}
-
-					@Override
-					public void sendToUser(final String user, final String text) {
-						final Message message = new Message(user, Message.Type.chat);
-						message.addBody(null, text);
-						privateMessageQueue.add(message);
-					}
-				});
+				((MessageSenderPlugin) plugin).setMessageSender(messageSender);
 			}
 			if (plugin instanceof NicknameAwarePlugin) {
-				((NicknameAwarePlugin) plugin).setNicknameByConference(new NicknameByConference() {
-					@Override
-					public String get(final String conference) {
-						return getNicknameByConference(conference);
-					}
-				});
+				((NicknameAwarePlugin) plugin).setNicknameByConference(nicknameByConference);
 			}
 			plugin.init();
-			plugins.add(plugin);
 		}
 
 		final Properties account = new Properties();

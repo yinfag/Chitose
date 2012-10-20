@@ -9,4 +9,6 @@ public interface Plugin {
 	void init();
     
     void shutdown();
+
+	String getHelpMessage(String conference);
 }

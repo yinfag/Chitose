@@ -73,7 +73,6 @@ public class Gelbooru implements ConferenceMessageProcessorPlugin, MessageSender
 		}
 		final Matcher m = commandPattern.matcher(message.getBody());
 		if (!m.matches()) {
-			System.out.println(" не нашли регэксп в запросе!");
 			return;
 		}
 
@@ -138,5 +137,12 @@ public class Gelbooru implements ConferenceMessageProcessorPlugin, MessageSender
 	@Override
 	public void shutdown() {
 
+	}
+
+	@Override
+	public String getHelpMessage(final String conference) {
+	    final String nick =  myNicknameByConference.get(conference);
+		return "Постим няшек: "+nick+" запости няшку" +
+						"\nПостим определённую няшку: "+nick+", запости misaka_mikoto";
 	}
 }

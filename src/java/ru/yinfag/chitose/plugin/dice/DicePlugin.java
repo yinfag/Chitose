@@ -51,6 +51,11 @@ public class DicePlugin implements ConferenceMessageProcessorPlugin, MessageSend
 	public void shutdown() {
 	}
 
+	@Override
+	public String getHelpMessage(final String conference) {
+		return "Кидаем кубики: " + myNicknameByConference.get(conference) + ", кинь 2d6";
+	}
+
 	public void processConferenceMessage(final Message message)
 			throws MessageProcessingException {
 		final String from = message.getFrom();

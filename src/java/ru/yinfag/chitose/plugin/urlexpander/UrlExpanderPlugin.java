@@ -94,4 +94,9 @@ public class UrlExpanderPlugin implements ConferenceMessageProcessorPlugin, Mess
 	@Override
 	public void shutdown() {
 	}
+
+	@Override
+	public String getHelpMessage(final String conference) {
+		return null;
+	}
 }
