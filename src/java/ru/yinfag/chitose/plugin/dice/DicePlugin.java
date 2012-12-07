@@ -90,6 +90,7 @@ public class DicePlugin implements ConferenceMessageProcessorPlugin, MessageSend
 					conference,
 					userNick + ": я не настолько умная же! >_<\""
 			);
+			return;
 		}
 
 		final int diceCount = Integer.parseInt(dcString);
