@@ -95,8 +95,13 @@ public class DicePlugin implements ConferenceMessageProcessorPlugin, MessageSend
 
 		final int diceCount = Integer.parseInt(dcString);
 		final int dieSides = Integer.parseInt(dsString);
+		mySender.sendToConference(conference, userNick + ": " + doThrowDice(diceCount, dieSides));
+	}
+
+	public static CharSequence doThrowDice(final int diceCount, final int dieSides) {
 		final Random random = ThreadLocalRandom.current();
-		final StringBuilder stringBuilder = new StringBuilder();
+		final StringBuilder stringBuilder = new StringBuilder()
+				.append(diceCount).append("d").append(dieSides).append(" = ");
 		int result = 0;
 		for (int i = 0; i < diceCount; i++) {
 			final int die = random.nextInt(dieSides) + 1;
@@ -106,10 +111,10 @@ public class DicePlugin implements ConferenceMessageProcessorPlugin, MessageSend
 			}
 			stringBuilder.append(die);
 		}
-		mySender.sendToConference(
-				conference,
-				userNick + ": Выпало " + stringBuilder +
-						" = " + result + ", такие дела, нян!"
-		);
+		if (diceCount > 1) {
+			stringBuilder.append(" = ").append(result);
+		}
+		return stringBuilder;
 	}
+
 }
