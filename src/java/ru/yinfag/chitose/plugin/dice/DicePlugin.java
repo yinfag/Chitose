@@ -9,8 +9,6 @@ import ru.yinfag.chitose.MessageSenderPlugin;
 import ru.yinfag.chitose.NicknameAwarePlugin;
 import ru.yinfag.chitose.NicknameByConference;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
@@ -25,10 +23,20 @@ import java.util.regex.Pattern;
  */
 public class DicePlugin implements ConferenceMessageProcessorPlugin, MessageSenderPlugin, NicknameAwarePlugin {
 
+	private static final String IMPERATIVE = "кинь";
+
+	private static final String G_TIMES = "times";
+	private static final String G_DICE = "dice";
+	private static final String G_SIDES = "sides";
+	private static final String G_MOD = "mod";
+	private static final Pattern DICE_SPEC = Pattern.compile(
+			"(?:(?<" + G_TIMES + ">\\d++)\\s*+[xх]\\s*+)?" +
+					"(?<" + G_DICE + ">\\d++)[dд](?<" + G_SIDES + ">\\d++)" +
+					"(?<" + G_MOD + ">[-+]\\d++)?"
+	);
+
 	private MessageSender mySender;
 	private NicknameByConference myNicknameByConference;
-
-	private final Map<String, Pattern> patternByConference = new HashMap<>();
 
 	@Override
 	public void setMessageSender(final MessageSender sender) {
@@ -61,60 +69,84 @@ public class DicePlugin implements ConferenceMessageProcessorPlugin, MessageSend
 		final String from = message.getFrom();
 		final String conference = from.substring(0, from.indexOf("/"));
 
-		final Pattern commandPattern;
-		if (patternByConference.containsKey(conference)) {
-			System.out.println(" using cached pattern");
-			commandPattern = patternByConference.get(conference);
-		} else {
-			final String nick = myNicknameByConference.get(conference);
-			System.out.println(" pattern cache miss; creating new for nick " + nick);
-			patternByConference.put(
-					conference,
-					commandPattern = Pattern.compile(
-							".*?" + nick + ".*?кинь.*?(\\d+)[dд](\\d+)"
-					)
-			);
-		}
-
-		final Matcher m = commandPattern.matcher(message.getBody());
-		if (!m.matches()) {
+		final String command = message.getBody();
+		int index = getPreambleEnd(command, conference);
+		if (index == -1) {
 			return;
 		}
 
-		final String userNick = MessageProcessorUtils.getUserNick(message);
-
-		final String dcString = m.group(1);
-		final String dsString = m.group(2);
-		if (dcString.length() > 2 || dsString.length() > 5) {
-			mySender.sendToConference(
-					conference,
-					userNick + ": я не настолько умная же! >_<\""
-			);
-			return;
+		final Matcher m = DICE_SPEC.matcher(command);
+		final StringBuilder stringBuilder = new StringBuilder();
+		final Random random = ThreadLocalRandom.current();
+		while (m.find(index)) {
+			try {
+				final int times = defaultableIntGroupValue(m, G_TIMES, 1);
+				final int dice = defaultableIntGroupValue(m, G_DICE, 0);
+				final int sides = defaultableIntGroupValue(m, G_SIDES, 0);
+				final int mod = defaultableIntGroupValue(m, G_MOD, 0);
+				if (times < 1 || dice < 1 || sides < 1 || times > 50 || dice > 100 || sides > 10000) {
+					if (stringBuilder.length() > 0) {
+						stringBuilder.append('\n');
+					}
+					stringBuilder.append(m.group()).append(" = ... я не настолько умная же! >_<\"");
+					continue;
+				}
+				for (int throwIndex = 0; throwIndex < times; throwIndex++) {
+					if (stringBuilder.length() > 0) {
+						stringBuilder.append('\n');
+					}
+					stringBuilder.append(dice).append('d').append(sides);
+					if (mod > 0) {
+						stringBuilder.append('+');
+					}
+					if (mod != 0) {
+						stringBuilder.append(mod);
+					}
+					stringBuilder.append(" = (");
+					int result = 0;
+					for (int dieIndex = 0; dieIndex < dice; dieIndex++) {
+						final int die = random.nextInt(sides) + 1;
+						result += die;
+						if (dieIndex != 0) {
+							stringBuilder.append(", ");
+						}
+						stringBuilder.append(die);
+					}
+					stringBuilder.append(')');
+					result += mod;
+					if (mod != 0) {
+						stringBuilder.append(mod > 0 ? " + " : " - ").append(Math.abs(mod));
+					}
+					stringBuilder.append(" = ").append(result);
+				}
+			} catch (NumberFormatException ignore) {
+			} finally {
+				index = m.end();
+			}
 		}
-
-		final int diceCount = Integer.parseInt(dcString);
-		final int dieSides = Integer.parseInt(dsString);
-		mySender.sendToConference(conference, userNick + ": " + doThrowDice(diceCount, dieSides));
+		stringBuilder.insert(0, MessageProcessorUtils.getUserNick(message) + ": ");
+		mySender.sendToConference(conference, stringBuilder.toString());
 	}
 
-	public static CharSequence doThrowDice(final int diceCount, final int dieSides) {
-		final Random random = ThreadLocalRandom.current();
-		final StringBuilder stringBuilder = new StringBuilder()
-				.append(diceCount).append("d").append(dieSides).append(" = ");
-		int result = 0;
-		for (int i = 0; i < diceCount; i++) {
-			final int die = random.nextInt(dieSides) + 1;
-			result += die;
-			if (i != 0) {
-				stringBuilder.append(" + ");
-			}
-			stringBuilder.append(die);
+	private int getPreambleEnd(final String command, final String conference) {
+		int i = command.indexOf(myNicknameByConference.get(conference));
+		if (i == -1) {
+			return -1;
 		}
-		if (diceCount > 1) {
-			stringBuilder.append(" = ").append(result);
+		i = command.indexOf(IMPERATIVE, i);
+		if (i == -1) {
+			return -1;
 		}
-		return stringBuilder;
+		i = i + IMPERATIVE.length() + 1;
+		if (i >= command.length()) {
+			return -1;
+		}
+		return i;
+	}
+
+	private int defaultableIntGroupValue(final Matcher m, final String group, final int defaultValue) throws NumberFormatException {
+		final String string = m.group(group);
+		return string == null ? defaultValue : Integer.parseInt(string);
 	}
 
 }
